@@ -1,5 +1,9 @@
 import { PaginationResponseDto } from '@/common/dto/pagination-resp.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import {
+  calculatePagination,
+  normalizePaginationResponse,
+} from '@/common/utils/pagination.utils';
 import { validatePrismaFields } from '@/common/utils/prisma-validator';
 import { PrismaService } from '@/database/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
@@ -29,7 +33,7 @@ export class BannerService {
 
   async findAll(query: PaginationDto) {
     const { page, limit, search, cnpj } = query;
-    const skip = limit && page ? (page - 1) * limit : 1;
+    const { skip, take } = calculatePagination(page, limit);
 
     validatePrismaFields(Prisma.BannerScalarFieldEnum, search);
 
@@ -52,10 +56,18 @@ export class BannerService {
       orderBy: {
         createAt: 'desc',
       },
-      take: limit === 0 ? total : limit,
+      take: take ?? total,
     });
 
-    return new PaginationResponseDto(banner, total, page || 1, limit ?? total);
+    const { page: responsePage, limit: responseLimit } =
+      normalizePaginationResponse(page, limit, total);
+
+    return new PaginationResponseDto(
+      banner,
+      total,
+      responsePage,
+      responseLimit,
+    );
   }
 
   async findOne(id: string) {

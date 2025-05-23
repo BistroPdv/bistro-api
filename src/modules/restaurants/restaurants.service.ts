@@ -1,5 +1,9 @@
 import { PaginationResponseDto } from '@/common/dto/pagination-resp.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
+import {
+  calculatePagination,
+  normalizePaginationResponse,
+} from '@/common/utils/pagination.utils';
 import { buildWhere } from '@/common/utils/prisma-query-builder';
 import { validatePrismaFields } from '@/common/utils/prisma-validator';
 import { PrismaService } from '@/database/prisma/prisma.service';
@@ -20,7 +24,7 @@ export class RestaurantsService {
 
   async findAll(query: PaginationDto) {
     const { page, limit, search, cnpj } = query;
-    const skip = limit && page ? (page - 1) * limit : 1;
+    const { skip, take } = calculatePagination(page, limit);
 
     validatePrismaFields(Prisma.RestaurantScalarFieldEnum, search);
 
@@ -32,14 +36,17 @@ export class RestaurantsService {
       where,
       skip,
       select: this.select,
-      take: limit ?? total,
+      take: take ?? total,
     });
+
+    const { page: responsePage, limit: responseLimit } =
+      normalizePaginationResponse(page, limit, total);
 
     return new PaginationResponseDto(
       restaurants,
       total,
-      page || 1,
-      limit ?? total,
+      responsePage,
+      responseLimit,
     );
   }
 
