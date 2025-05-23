@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SYSADMIN
+  OWNER
+  MANAGER
+  USER
+}
+
+enum Integrations {
+  OMIE
+}
+
+model User {
+  id             String     @id @default(uuid())
+  ativo          Boolean    @default(true)
+  nome           String?
+  username       String
+  password       String
+  email          String?
+  delete         Boolean    @default(false)
+  role           Role       @default(USER)
+  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
+  restaurantCnpj String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([email, restaurantCnpj])
+  @@unique([username, restaurantCnpj, delete])
+}
+
+model IntegrationOmie {
+  id           String     @id @default(uuid())
+  omie_key     String
+  omie_secret  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [cnpj])
+  restaurantId String     @unique
+}
+
+model WhiteLabel {
+  id             String     @id @default(uuid())
+  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
+  restaurantCnpj String     @unique
+  logo           String
+  primaryColor   String
+}
+
+model Restaurant {
+  cnpj                String           @id @unique
+  name                String
+  phone               String
+  logo                String?
+  nfe                 Boolean
+  email               String           @unique
+  filiais             Filial[] // Relacionamento: Uma empresa pode ter várias filiais
+  categorias          Categoria[]
+  appToken            String           @unique @default(uuid())
+  pdvIntegrations     Integrations?
+  integrationOmie     IntegrationOmie?
+  produtos            Produto[]
+  impressoras         Impressora[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  delete              Boolean          @default(false) // Para controlar o status
+  printerNotification String?
+  printerBill         String?
+  adminPassword       String?          @default("admin123")
+  WhiteLabel          WhiteLabel?
+  Mesa                Mesa[]
+  Cliente             Cliente[]
+  Pedidos             Pedidos[]
+  Banner              Banner[]
+  User                User[]
+}
+
+model Filial {
+  id             String     @id @default(uuid())
+  nome           String
+  cnpj           String     @unique
+  endereco       String
+  telefone       String?
+  restaurantCnpj String     @unique
+  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
+  delete         Boolean    @default(false) // Para controlar o status
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Banner {
+  id             String     @id @default(uuid()) // ID único autoincrementado
+  url            String // URL da imagem do banner
+  nome           String // Nome do banner
+  ordem          Int // Ordem de exibição do banner
+  tempo          Int // Tempo de exibição em segundos
+  restaurantCnpj String
+  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
+  delete         Boolean    @default(false) // Para controlar o status
+  createAt       DateTime   @default(now())
+  updateAt       DateTime?  @updatedAt
+}
+
+model Categoria {
+  id             String            @id @default(uuid())
+  status         Boolean           @default(false)
+  nome           String
+  imagem         String?
+  cor            String?
+  ativo          Boolean           @default(true)
+  ordem          Int               @default(0)
+  temPromocao    Boolean           @default(false)
+  produtos       Produto[]
+  externoId      String?
+  restaurantCnpj String
+  restaurant     Restaurant        @relation(fields: [restaurantCnpj], references: [cnpj])
+  delete         Boolean           @default(false) // Para controlar o status
+  createAt       DateTime          @default(now())
+  updateAt       DateTime?         @updatedAt
+  Impressora     Impressora?       @relation(fields: [impressoraId], references: [id])
+  impressoraId   String?
+  adicionais     AdicionalHeader[]
+}
+
+model AdicionalHeader {
+  id          String             @id @default(uuid())
+  titulo      String
+  ativo       Boolean            @default(true)
+  ordem       Int                @default(0)
+  qtdMinima   Int?               @default(1)
+  qtdMaxima   Int?               @default(1)
+  obrigatorio Boolean            @default(false)
+  delete      Boolean            @default(false)
+  createAt    DateTime           @default(now())
+  updateAt    DateTime?          @updatedAt
+  opcoes      AdicionalOptions[]
+  Categoria   Categoria?         @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  categoriaId String?
+}
+
+model AdicionalOptions {
+  id                     String                   @id @default(uuid())
+  nome                   String
+  preco                  Float
+  codIntegra             String?
+  ativo                  Boolean                  @default(true)
+  createAt               DateTime                 @default(now())
+  updateAt               DateTime?                @updatedAt
+  delete                 Boolean                  @default(false)
+  AdicionalHeader        AdicionalHeader?         @relation(fields: [adicionalHeaderId], references: [id], onDelete: Cascade)
+  adicionalHeaderId      String?
+  PedidoProdutoAdicional PedidoProdutoAdicional[]
+}
+
+// Impressoras
+model Impressora {
+  id             String      @id @default(uuid())
+  nome           String
+  ip             String
+  porta          Int
+  delete         Boolean     @default(false)
+  createAt       DateTime    @default(now())
+  updateAt       DateTime?   @updatedAt
+  restaurantCnpj String
+  restaurant     Restaurant  @relation(fields: [restaurantCnpj], references: [cnpj])
+  Categoria      Categoria[]
+}
+
+model Produto {
+  id             String          @id @default(uuid())
+  ativo          Boolean         @default(true)
+  nome           String
+  descricao      String
+  imagem         String
+  preco          Float
+  ordem          Int             @default(0)
+  categoriaId    String?
+  categoria      Categoria?      @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  externoId      String?
+  codigo         String?
+  restaurantCnpj String
+  restaurant     Restaurant      @relation(fields: [restaurantCnpj], references: [cnpj])
+  delete         Boolean         @default(false)
+  createAt       DateTime        @default(now())
+  updateAt       DateTime?       @updatedAt
+  PedidoProduto  PedidoProduto[]
+  updateFrom     String?
+}
+
+// Pedidos
+
+enum StatusPedido {
+  ABERTO
+  FINALIZADO
+  CANCELADO
+}
+
+enum StatusProduto {
+  AGUARDANDO
+  PREPARANDO
+  CANCELADO
+  PRONTO
+  ENTREGUE
+}
+
+model Mesa {
+  id             String     @id @default(uuid())
+  numero         Int
+  delete         Boolean    @default(false)
+  capacity       Int?
+  location       String?
+  restaurantCnpj String
+  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  pedidos        Pedidos[]
+
+  @@unique([numero, restaurantCnpj])
+}
+
+model Cliente {
+  id             String     @id @default(uuid())
+  nome           String
+  restaurantCnpj String
+  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
+}
+
+model Pedidos {
+  id                 String          @id @default(uuid())
+  mesa               Mesa            @relation(fields: [mesaId], references: [id])
+  mesaId             String
+  status             StatusPedido
+  motivoCancelamento String?
+  pdvCodPedido       String?
+  produtos           PedidoProduto[]
+  delete             Boolean         @default(false)
+  restaurantCnpj     String
+  restaurant         Restaurant      @relation(fields: [restaurantCnpj], references: [cnpj])
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+
+model PedidoProduto {
+  id           String                   @id @default(uuid())
+  pedido       Pedidos                  @relation(fields: [pedidoId], references: [id])
+  pedidoId     String
+  produto      Produto                  @relation(fields: [produtoId], references: [id])
+  produtoId    String
+  externoId    String?
+  obs          String?
+  status       StatusProduto
+  quantidade   Int
+  cupom_fiscal Boolean                  @default(true)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  adicionais   PedidoProdutoAdicional[]
+}
+
+model PedidoProdutoAdicional {
+  id              String           @id @default(uuid())
+  pedidoProduto   PedidoProduto    @relation(fields: [pedidoProdutoId], references: [id])
+  pedidoProdutoId String
+  adicional       AdicionalOptions @relation(fields: [adicionalId], references: [id])
+  adicionalId     String
+  quantidade      Int
+  preco           Float
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([pedidoProdutoId, adicionalId])
+}
