@@ -4,6 +4,9 @@ export class PaginationResponseDto<T> {
   @ApiProperty({ example: 1, description: 'Página atual' })
   page: number;
 
+  @ApiProperty({ example: 20, description: 'Total de paginas' })
+  totalPage: number;
+
   @ApiProperty({ example: 10, description: 'Itens por página' })
   limit: number;
 
@@ -18,5 +21,6 @@ export class PaginationResponseDto<T> {
     this.total = total;
     this.page = page;
     this.limit = limit === 0 ? total : limit;
+    this.totalPage = Math.ceil(this.total / this.limit);
   }
 }
