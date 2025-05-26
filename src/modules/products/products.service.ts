@@ -106,6 +106,20 @@ export class ProductsService {
     return result;
   }
 
+  async toggleStatus(id: string, cnpj: string) {
+    const produto = await this.prisma.produto.findUnique({
+      where: { id, restaurantCnpj: cnpj },
+    });
+    if (!produto) {
+      throw new HttpException('Produto não encontrado', HttpStatus.NOT_FOUND);
+    }
+    const ativo = produto.ativo;
+    return this.prisma.produto.update({
+      where: { id, restaurantCnpj: cnpj },
+      data: { ativo: { set: !ativo } },
+    });
+  }
+
   async delete(id: string) {
     return this.prisma.produto.update({
       where: { id },

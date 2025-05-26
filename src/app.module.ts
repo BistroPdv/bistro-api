@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { BannerModule } from './modules/banner/banner.module';
 import { CategoryModule } from './modules/category/category.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { PedidosModule } from './modules/pedidos/pedidos.module';
 import { PrintersModule } from './modules/printers/printers.module';
 import { ProductsModule } from './modules/products/products.module';
 import { RestaurantsModule } from './modules/restaurants/restaurants.module';
@@ -24,6 +25,7 @@ import { UsersModule } from './modules/users/users.module';
     RestaurantsModule,
     DashboardModule,
     BannerModule,
+    PedidosModule,
   ],
 })
 export class AppModule {}

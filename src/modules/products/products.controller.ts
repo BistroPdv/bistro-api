@@ -10,6 +10,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -250,6 +251,12 @@ export class ProductsController {
   ) {
     const { restaurantCnpj } = req.user;
     return this.productsService.updateOrder(req.body, restaurantCnpj);
+  }
+
+  @Patch(':id/toggle-status')
+  async toggleStatus(@Param('id') id: string, @Req() req: FastifyRequest) {
+    const { restaurantCnpj } = req.user;
+    return this.productsService.toggleStatus(id, restaurantCnpj);
   }
 
   @Delete(':id')

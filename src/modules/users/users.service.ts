@@ -7,7 +7,7 @@ import {
 import { buildWhere } from '@/common/utils/prisma-query-builder';
 import { validatePrismaFields } from '@/common/utils/prisma-validator';
 import { PrismaService } from '@/database/prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
@@ -80,6 +80,17 @@ export class UsersService {
         ...data,
         password: hashedPassword,
       },
+    });
+  }
+
+  async toggleActive(cnpj: string, id: string) {
+    const active = await this.prisma.user.findUnique({ where: { id } });
+    if (!active) {
+      throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
+    }
+    return this.prisma.user.update({
+      where: { id, restaurantCnpj: cnpj },
+      data: { ativo: { set: !active.ativo } },
     });
   }
 

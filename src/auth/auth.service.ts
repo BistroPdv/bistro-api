@@ -41,6 +41,10 @@ export class AuthService {
       throw new UnauthorizedException('Usuário ou senha inválidos');
     }
 
+    if (!user?.ativo) {
+      throw new UnauthorizedException('Usuário desativado');
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password || '');
 
     if (!isPasswordValid) {

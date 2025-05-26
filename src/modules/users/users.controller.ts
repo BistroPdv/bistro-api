@@ -6,6 +6,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -79,6 +80,11 @@ export class UsersController {
       },
       id,
     );
+  }
+
+  @Patch(':id/active')
+  async patchActive(@Req() req: FastifyRequest, @Param('id') id: string) {
+    return this.usersService.toggleActive(req.user.restaurantCnpj, id);
   }
 
   @Delete(':id')
