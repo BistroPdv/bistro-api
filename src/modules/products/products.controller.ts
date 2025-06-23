@@ -2,6 +2,7 @@ import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import convertWebp from '@/common/utils/convert-webp';
 import { s3Helper } from '@/common/utils/s3.helper';
+import { WebsocketGateway } from '@/websocket/websocket.gateway';
 import urlToWebp from '@/common/utils/url-to-webp';
 import {
   Controller,
@@ -29,7 +30,10 @@ import { ProductsService } from './products.service';
 @ApiTags('Products')
 @Controller('produtos')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly websocketGateway: WebsocketGateway,
+  ) {}
 
   @Get()
   async findAll(
@@ -109,7 +113,14 @@ export class ProductsController {
         }
       }
 
-      return this.productsService.create(produtoData);
+      const result =  this.productsService.create(produtoData);
+
+      this.websocketGateway.server.emit(
+        `produto:status:updated:${req.user.restaurantCnpj}`,
+        {},
+      );
+      
+      return result
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -223,6 +234,11 @@ export class ProductsController {
         }
       }
 
+      this.websocketGateway.server.emit(
+        `produto:status:updated:${req.user.restaurantCnpj}`,
+        {},
+      );
+
       return this.productsService.update(produtoData, id);
     } catch (error) {
       if (error instanceof HttpException) {
@@ -250,17 +266,30 @@ export class ProductsController {
     }>,
   ) {
     const { restaurantCnpj } = req.user;
+    this.websocketGateway.server.emit(
+      `produto:status:updated:${req.user.restaurantCnpj}`,
+      {},
+    );
     return this.productsService.updateOrder(req.body, restaurantCnpj);
   }
 
   @Patch(':id/toggle-status')
   async toggleStatus(@Param('id') id: string, @Req() req: FastifyRequest) {
     const { restaurantCnpj } = req.user;
+
+    this.websocketGateway.server.emit(
+      `produto:status:updated:${req.user.restaurantCnpj}`,
+      {},
+    );
     return this.productsService.toggleStatus(id, restaurantCnpj);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string, @Req() req: FastifyRequest) {
+    this.websocketGateway.server.emit(
+      `produto:status:updated:${req.user.restaurantCnpj}`,
+      {},
+    );
     return this.productsService.delete(id);
   }
 }

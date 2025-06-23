@@ -113,7 +113,7 @@ export class SettingsService {
     if (update && file) {
       // Enviar para o S3
       const returnFile = await s3Helper.post(file, cnpj + `/logo`);
-
+      console.log('ARQUIVO ENVIADO')
       if (!returnFile) {
         throw new HttpException(
           'Erro ao fazer upload do arquivo',

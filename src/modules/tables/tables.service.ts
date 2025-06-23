@@ -9,6 +9,10 @@ import { PrismaService } from '@/database/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+interface PropsMesaNumber extends PaginationDto {
+  mesaNumber?: string;
+}
+
 @Injectable()
 export class TablesService {
   constructor(private prisma: PrismaService) {}
@@ -20,13 +24,13 @@ export class TablesService {
     location: true,
   };
 
-  async findAll(query: PaginationDto) {
+  async findAll(query: PropsMesaNumber) {
     const { page, limit, search, cnpj } = query;
     const { skip, take } = calculatePagination(page, limit);
 
     validatePrismaFields(Prisma.MesaScalarFieldEnum, search);
 
-    const where: Prisma.MesaWhereInput = search
+    let where: Prisma.MesaWhereInput = search
       ? Object.keys(search).reduce(
           (acc, key) => {
             acc[key] = { contains: search[key], mode: 'insensitive' };
@@ -35,6 +39,10 @@ export class TablesService {
           { delete: false, restaurant: { cnpj } },
         )
       : { delete: false, restaurant: { cnpj } };
+
+    if (query.mesaNumber) {
+      where = { ...where, numero: Number(query.mesaNumber) }
+    }
 
     const total = await this.prisma.mesa.count({ where });
 

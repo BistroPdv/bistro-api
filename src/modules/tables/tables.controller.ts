@@ -23,6 +23,10 @@ interface PropsMesas extends Prisma.MesaCreateInput {
   endNumber?: number;
 }
 
+interface PropsQueryDtoMesa extends PaginationQueryDto {
+  mesaNumber?: string;
+}
+
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 @ApiTags('Mesas')
@@ -32,9 +36,10 @@ export class TablesController {
 
   @Get()
   async findAll(
-    @Query() query: PaginationQueryDto,
+    @Query() query: PropsQueryDtoMesa,
     @Req() req: FastifyRequest,
   ) {
+    
     return this.tablesService.findAll({
       ...query,
       cnpj: req.user.restaurantCnpj,
@@ -45,6 +50,11 @@ export class TablesController {
   async findOne(@Param('id') id: string, @Req() req: FastifyRequest) {
     return this.tablesService.findOne(Number(id), req.user.restaurantCnpj);
   }
+
+  // @Get(':mesaNumber')
+  // async findTable(@Param('mesaNumber') mesaNumber: string, @Req() req: FastifyRequest) {
+  //   return this.tablesService.findOne(Number(mesaNumber), req.user.restaurantCnpj);
+  // }
 
   @ApiBody({
     description: 'Criação de mesa',

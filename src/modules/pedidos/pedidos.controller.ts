@@ -82,7 +82,7 @@ export class PedidosController {
 
       if (produtoData.imagem) {
         const isS3 = produtoData.imagem.includes(
-          `${process.env.S3_MINIO_URL}/${process.env.S3_MINIO_BUCKETS}/`,
+          `${process.env.S3}/${process.env.S3_BUCKET}/`,
         );
 
         if (!isS3) {

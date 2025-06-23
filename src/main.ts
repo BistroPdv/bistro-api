@@ -4,14 +4,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import {
-  FastifyAdapter,
-  NestFastifyApplication,
+    FastifyAdapter,
+    NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { JwtInterceptor } from './auth/jwt.interceptor';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import Default from './config/configuration';
+import { PrismaService } from './database/prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -44,7 +45,8 @@ async function bootstrap() {
   app.useGlobalFilters(new PrismaExceptionFilter());
 
   const jwtService = app.get(JwtService);
-  app.useGlobalInterceptors(new JwtInterceptor(jwtService));
+  const prismaService = app.get(PrismaService);
+  app.useGlobalInterceptors(new JwtInterceptor(jwtService, prismaService));
 
   app.register(multipart, {
     attachFieldsToBody: true,
