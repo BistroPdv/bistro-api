@@ -1,11 +1,11 @@
 import multipart from '@fastify/multipart';
-import * as fastifySwagger from '@fastify/swagger';
+import fastifySwagger from '@fastify/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import {
-    FastifyAdapter,
-    NestFastifyApplication,
+  FastifyAdapter,
+  NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -38,7 +38,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  await app.register(fastifySwagger.default);
+  await app.register(fastifySwagger as any);
 
   SwaggerModule.setup('docs', app, document);
 
@@ -48,7 +48,7 @@ async function bootstrap() {
   const prismaService = app.get(PrismaService);
   app.useGlobalInterceptors(new JwtInterceptor(jwtService, prismaService));
 
-  app.register(multipart, {
+  app.register(multipart as any, {
     attachFieldsToBody: true,
     limits: {
       fileSize: 50 * 1024 * 1024, // 50MB
