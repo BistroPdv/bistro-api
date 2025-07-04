@@ -223,6 +223,12 @@ export class CategoryController {
         req.body,
         restaurantCnpj,
       );
+      if (result) {
+        this.websocketGateway.server.emit(
+          `produto:ordem:updated:${restaurantCnpj}`,
+          {},
+        );
+      }
       return result;
     } catch (error) {
       console.error(error);
