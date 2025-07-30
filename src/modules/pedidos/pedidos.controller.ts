@@ -1,8 +1,5 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
-import convertWebp from '@/common/utils/convert-webp';
-import { s3Helper } from '@/common/utils/s3.helper';
-import urlToWebp from '@/common/utils/url-to-webp';
 import {
   Controller,
   Delete,
@@ -21,7 +18,7 @@ import { Prisma } from '@prisma/client';
 import { FastifyRequest } from 'fastify';
 import { CreatePedidosDto } from './dto/create-pedidos.dto';
 import { UpdatePedidosDto } from './dto/update-pedidos.dto';
-import { PedidosService } from './pedidos.service';
+import { PedidoProdutoComAdicionais, PedidosService } from './pedidos.service';
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -54,6 +51,21 @@ export class PedidosController {
     return this.pedidosService.findOne(id, req.user.restaurantCnpj);
   }
 
+  @Get('mesa/:id')
+  async findByMesa(
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+    @Query('status') status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+    @Req() req: FastifyRequest,
+  ) {
+    return this.pedidosService.findByMesa(
+      id,
+      req.user.restaurantCnpj,
+      query,
+      status,
+    );
+  }
+
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     description: 'Criação de pedido',
@@ -64,59 +76,19 @@ export class PedidosController {
     @Req() req: FastifyRequest<{ Body: Prisma.PedidosCreateInput }>,
   ) {
     try {
-      const { restaurantCnpj } = req.user;
-      const formData = await req.formData();
-
-      const produtoData: any = {
-        nome: formData.get('nome')?.toString(),
-        descricao: formData.get('descricao')?.toString(),
-        preco: formData.get('preco') ? Number(formData.get('preco')) : 0,
-        categoriaId: formData.get('categoriaId')?.toString(),
-        ativo: formData.get('ativo') ? formData.get('ativo') === 'true' : true,
-        codigo: formData.get('codigo')?.toString(),
-        imagem: formData.get('imagem')?.toString() || '',
-        externoId: formData.get('externoId')?.toString(),
-        updateFrom: formData.get('updateFrom')?.toString(),
-        restaurantCnpj,
-      };
-
-      if (produtoData.imagem) {
-        const isS3 = produtoData.imagem.includes(
-          `${process.env.S3}/${process.env.S3_BUCKET}/`,
-        );
-
-        if (!isS3) {
-          const webpFile = await urlToWebp(produtoData.imagem);
-          const returnFile = await s3Helper.post(
-            webpFile,
-            `${restaurantCnpj}/produtos`,
-          );
-          produtoData.imagem = returnFile?.url ?? '';
-        }
+      if (!req.user.restaurantCnpj) {
+        throw new HttpException('CNPJ não encontrado', HttpStatus.BAD_REQUEST);
       }
 
-      const imagem = formData.get('file');
-      if (imagem && imagem instanceof File) {
-        try {
-          const webpFile = await convertWebp(imagem);
-          const returnFile = await s3Helper.post(
-            webpFile,
-            `${restaurantCnpj}/produtos`,
-          );
+      const produtos = req.body.produtos as PedidoProdutoComAdicionais[];
 
-          if (returnFile?.url) {
-            produtoData.imagem = returnFile?.url ?? '';
-          }
-        } catch (s3Error) {
-          console.error('Erro ao enviar imagem para S3:', s3Error);
-          throw new HttpException(
-            'Erro ao processar a imagem',
-            HttpStatus.INTERNAL_SERVER_ERROR,
-          );
-        }
-      }
+      delete req.body.produtos;
 
-      return this.pedidosService.create(produtoData);
+      return this.pedidosService.create(
+        req.body,
+        produtos,
+        req.user.restaurantCnpj,
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

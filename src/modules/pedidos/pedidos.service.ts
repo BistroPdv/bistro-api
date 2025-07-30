@@ -1,3 +1,4 @@
+import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import { PaginationResponseDto } from '@/common/dto/pagination-resp.dto';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import {
@@ -7,8 +8,20 @@ import {
 import { buildWhere } from '@/common/utils/prisma-query-builder';
 import { validatePrismaFields } from '@/common/utils/prisma-validator';
 import { PrismaService } from '@/database/prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+
+export interface Adicional {
+  id: string;
+  codIntegra: string | null;
+  quantidade: number;
+  price: number;
+}
+
+export interface PedidoProdutoComAdicionais
+  extends Prisma.PedidoProdutoCreateManyInput {
+  adicionais?: Adicional[];
+}
 
 @Injectable()
 export class PedidosService {
@@ -16,24 +29,34 @@ export class PedidosService {
 
   private select: Prisma.PedidosSelect = {
     id: true,
-    mesa: true,
+    status: true,
     pdvCodPedido: true,
+    createdAt: true,
+    mesa: { select: { numero: true, id: true } },
     produtos: {
       select: {
+        produto: {
+          select: {
+            nome: true,
+            preco: true,
+            descricao: true,
+            codigo: true,
+          },
+        },
+        obs: true,
         adicionais: {
           select: {
             adicional: {
               select: { nome: true, preco: true, codIntegra: true },
             },
+            quantidade: true,
+            preco: true,
           },
         },
-        produto: true,
         quantidade: true,
+        status: true,
       },
     },
-    status: true,
-    createdAt: true,
-    restaurant: true,
   };
 
   async findAll(query: PaginationDto) {
@@ -74,14 +97,92 @@ export class PedidosService {
     });
   }
 
-  async create(data: Prisma.PedidosCreateInput) {
-    delete data.id;
-    return this.prisma.pedidos.create({
-      select: this.select,
+  async findByMesa(
+    id: string,
+    cnpj: string,
+    query: PaginationQueryDto,
+    status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+  ) {
+    const { page, limit } = query;
+    const { skip, take } = calculatePagination(page, limit);
+
+    if (!cnpj) {
+      throw new NotFoundException('CNPJ não encontrado');
+    }
+
+    const isMesa = await this.prisma.mesa.findUnique({
+      where: { id, restaurant: { cnpj } },
+    });
+
+    if (!isMesa) {
+      throw new NotFoundException('Mesa não encontrada');
+    }
+
+    const where: Prisma.PedidosWhereInput = {
+      delete: false,
+      restaurantCnpj: cnpj,
+      ...(status ? { status } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.pedidos.findMany({
+        where,
+        select: this.select,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.pedidos.count({ where }),
+    ]);
+
+    const { page: responsePage, limit: responseLimit } =
+      normalizePaginationResponse(page, limit, total);
+
+    return new PaginationResponseDto(data, total, responsePage, responseLimit);
+  }
+
+  async create(
+    data: Prisma.PedidosCreateInput,
+    produtos: PedidoProdutoComAdicionais[],
+    cnpj: string,
+  ) {
+    const create = await this.prisma.pedidos.create({
       data: {
         ...data,
+        restaurant: {
+          connect: { cnpj },
+        },
+        mesa: { connect: { id: data.mesa as string } },
       },
     });
+
+    if (create) {
+      for (const p of produtos) {
+        const pedidoProduto = await this.prisma.pedidoProduto.create({
+          data: {
+            status: 'PRONTO',
+            pedidoId: create.id,
+            produtoId: p.produtoId,
+            obs: p.obs,
+            externoId: p.externoId,
+            quantidade: p.quantidade,
+          },
+        });
+
+        if (p.adicionais && p.adicionais.length > 0) {
+          await this.prisma.pedidoProdutoAdicional.createMany({
+            data: p.adicionais.map((a) => ({
+              pedidoProdutoId: pedidoProduto.id,
+              adicionalId: a.id,
+              quantidade: a.quantidade,
+              preco: a.price,
+            })),
+          });
+        }
+      }
+    }
+
+    return create;
   }
 
   async update(data: Prisma.PedidosUpdateInput, id: string) {
