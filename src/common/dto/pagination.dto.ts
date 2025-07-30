@@ -55,4 +55,12 @@ export class PaginationDto {
   @IsNotEmpty()
   @IsString()
   cnpj: string;
+
+  @ApiPropertyOptional({
+    description: 'Status do item',
+    example: 'true',
+    type: String,
+  })
+  @IsOptional()
+  status?: boolean | string;
 }

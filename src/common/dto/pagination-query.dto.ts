@@ -39,4 +39,12 @@ export class PaginationQueryDto {
     return value;
   })
   search?: Record<string, string>;
+
+  @ApiPropertyOptional({
+    description: 'Status do item',
+    example: 'true',
+    type: String,
+  })
+  @IsOptional()
+  status?: boolean | string;
 }

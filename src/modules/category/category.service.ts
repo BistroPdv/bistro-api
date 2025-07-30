@@ -47,7 +47,7 @@ export class CategoryService {
         createAt: true,
         updateAt: true,
         updateFrom: true,
-        categoria: { select: { id: true } },
+        categoria: { select: { id: true, nome: true } },
       },
     },
     adicionais: {
@@ -65,6 +65,7 @@ export class CategoryService {
         updateAt: true,
         categoriaId: true,
         opcoes: {
+          where: { delete: false },
           select: {
             id: true,
             nome: true,
@@ -95,19 +96,51 @@ export class CategoryService {
   };
 
   async findAll(query: PaginationDto) {
-    const { page, limit, search, cnpj } = query;
+    const { page, limit, search, cnpj, status } = query;
     const { skip, take } = calculatePagination(page, limit);
 
     validatePrismaFields(Prisma.CategoriaScalarFieldEnum, search);
 
+    let select = { ...this.select };
+
+    // Se status for false ou undefined, traz apenas itens ativos
+    // Se status for true, traz todos os itens (ativos e inativos)
+    if (query.status !== true) {
+      if (select.produtos && typeof select.produtos === 'object') {
+        select.produtos.where = {
+          ...select.produtos.where,
+          ...{ ativo: true }, // status=false traz apenas ativos, status=true traz todos
+        };
+      }
+      if (select.adicionais && typeof select.adicionais === 'object') {
+        select.adicionais.where = {
+          ...select.adicionais.where,
+          ...{ ativo: true }, // status=false traz apenas ativos, status=true traz todos
+        };
+        if (
+          select.adicionais.select?.opcoes &&
+          typeof select.adicionais.select?.opcoes === 'object'
+        ) {
+          select.adicionais.select.opcoes.where = {
+            ...select.adicionais.select.opcoes.where,
+            ...{ ativo: true }, // status=false traz apenas ativos, status=true traz todos
+          };
+        }
+      }
+    }
+
+    console.log(query);
+
     const where = buildWhere<Prisma.CategoriaWhereInput>(search, cnpj);
 
-    const total = await this.prisma.categoria.count({ where });
+    const total = await this.prisma.categoria.count({
+      where: { ...where, ...(status !== true && { ativo: true }) },
+    });
 
     const categories = await this.prisma.categoria.findMany({
-      where,
+      where: { ...where, ...(status !== true && { ativo: true }) },
       skip,
-      select: this.select,
+      select,
       orderBy: {
         ordem: 'asc',
       },

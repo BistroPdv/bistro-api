@@ -5,6 +5,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
   InternalServerErrorException,
   NotFoundException,
   Param,
@@ -41,8 +43,28 @@ export class CategoryController {
     @Query() query: PaginationQueryDto,
     @Req() req: FastifyRequest,
   ) {
+    // Validação: se status existe na query mas está undefined, retorna erro
+    if ('status' in query && query.status === undefined) {
+      throw new HttpException(
+        {
+          message: 'O parâmetro status não pode estar undefined',
+          error: 'BAD_REQUEST',
+          statusCode: 400,
+          details:
+            'Use "true" para trazer todos os itens ou "false" para trazer apenas itens ativos',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Converte o status para boolean de forma mais clara
+    // Se status for 'true' (string), converte para true (boolean)
+    // Se status for qualquer outra coisa (undefined, 'false', etc), mantém como false
+    const status = query.status === 'true' ? true : false;
+
     return this.categoryService.findAll({
       ...query,
+      status,
       cnpj: req.user.restaurantCnpj,
     });
   }
