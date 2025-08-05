@@ -1,5 +1,4 @@
 import multipart from '@fastify/multipart';
-import fastifySwagger from '@fastify/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
@@ -8,6 +7,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 import { AppModule } from './app.module';
 import { JwtInterceptor } from './auth/jwt.interceptor';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
@@ -29,6 +29,7 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+
   const config = new DocumentBuilder()
     .setTitle('Bistro API')
     .setDescription('Documentação da API do Bistro')
@@ -38,9 +39,22 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  await app.register(fastifySwagger as any);
+  // await app.register(fastifySwagger as any);
 
-  SwaggerModule.setup('docs', app, document);
+  // SwaggerModule.setup('docs', app, document);
+
+  app.use(
+    '/docs',
+    apiReference({
+      url: 'http://10.10.1.162:4000/docs',
+      content: document,
+      title: 'Bistro API',
+      withFastify: true,
+      description: 'Documentação da API do Bistro',
+      version: '1.0',
+      theme: 'saturn',
+    }),
+  );
 
   app.useGlobalFilters(new PrismaExceptionFilter());
 
