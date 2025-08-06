@@ -5,6 +5,7 @@ import { BannerModule } from './modules/banner/banner.module';
 import { CategoryModule } from './modules/category/category.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GroupAdicionaisModule } from './modules/group-adicionais/group-adicionais.module';
+import { PaymentMethodModule } from './modules/payment-method/payment-method.module';
 import { PedidosModule } from './modules/pedidos/pedidos.module';
 import { PrintersModule } from './modules/printers/printers.module';
 import { ProductsModule } from './modules/products/products.module';
@@ -28,6 +29,7 @@ import { UsersModule } from './modules/users/users.module';
     BannerModule,
     PedidosModule,
     GroupAdicionaisModule,
+    PaymentMethodModule,
   ],
 })
 export class AppModule {}

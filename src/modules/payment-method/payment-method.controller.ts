@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -15,6 +16,7 @@ import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { PaymentMethod, Prisma } from '@prisma/client';
 import { FastifyRequest } from 'fastify';
 import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
+import { UpdatePaymentMethodDto } from './dto/update-payment-method.dto';
 import { PaymentMethodService } from './payment-method.service';
 
 @UseGuards(JwtAuthGuard)
@@ -56,6 +58,10 @@ export class PaymentMethodController {
     );
   }
 
+  @ApiBody({
+    description: 'Atualização de método de pagamento',
+    type: UpdatePaymentMethodDto,
+  })
   @Put(':id')
   async update(
     @Req() req: FastifyRequest<{ Body: PaymentMethod }>,
@@ -64,6 +70,34 @@ export class PaymentMethodController {
     return this.paymentMethodService.update(
       req.body,
       id,
+      req.user.restaurantCnpj,
+    );
+  }
+
+  @ApiBody({
+    description: 'Atualização de status de pagamento',
+  })
+  @Patch(':id')
+  async updateStatus(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest<{ Body: Prisma.PaymentMethodUpdateInput }>,
+  ) {
+    return this.paymentMethodService.update(
+      req.body,
+      id,
+      req.user.restaurantCnpj,
+    );
+  }
+
+  @ApiBody({
+    description: 'Atualização de ordem de pagamento',
+  })
+  @Put('/order')
+  async updateOrder(
+    @Req() req: FastifyRequest<{ Body: { id: string; order: number }[] }>,
+  ) {
+    return this.paymentMethodService.updateOrder(
+      req.body,
       req.user.restaurantCnpj,
     );
   }

@@ -15,8 +15,12 @@ export class PaymentMethodService {
 
   private select: Prisma.PaymentMethodSelect = {
     id: true,
-    nome: true,
-    delete: true,
+    name: true,
+    type: true,
+    description: true,
+    change: true,
+    status: true,
+    taxa: true,
     createAt: true,
     updateAt: true,
   };
@@ -44,7 +48,7 @@ export class PaymentMethodService {
       skip,
       select: this.select,
       orderBy: {
-        createAt: 'desc',
+        order: 'asc',
       },
       take: take ?? total,
     });
@@ -90,6 +94,20 @@ export class PaymentMethodService {
         ...data,
       },
     });
+  }
+
+  async updateOrder(data: { id: string; order: number }[], cnpj: string) {
+    console.log(data);
+    const response: Prisma.PaymentMethodUpdateInput[] = [];
+    for (let i = 0; i < data.length; i++) {
+      const { id, order } = data[i];
+      const paymentMethod = await this.prisma.paymentMethod.update({
+        where: { id, restaurant: { cnpj } },
+        data: { order },
+      });
+      response.push(paymentMethod);
+    }
+    return response;
   }
 
   async delete(id: string, cnpj: string) {

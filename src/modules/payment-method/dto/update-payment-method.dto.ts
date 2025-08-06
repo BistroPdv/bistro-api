@@ -1,30 +1,74 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
+enum TipoPagamento {
+  DINHEIRO = 'DINHEIRO',
+  CARTAO = 'CARTAO',
+  PIX = 'PIX',
+  TICKET = 'TICKET',
+  VOUCHER = 'VOUCHER',
+  OUTROS = 'OUTROS',
+}
 
 export class UpdatePaymentMethodDto {
-  @ApiProperty({ example: 'CAIXA', description: 'Nome da impressora' })
-  @IsNotEmpty()
+  @ApiProperty({
+    example: 'Cartão de Crédito',
+    description: 'Nome do método de pagamento',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  nome: string;
+  name?: string;
 
   @ApiProperty({
-    example: '192.168.1.225',
-    description: 'Endereço IP da impressora',
+    example: 'CARTAO',
+    description: 'Tipo do método de pagamento',
+    enum: TipoPagamento,
+    required: false,
   })
-  @IsNotEmpty()
-  @IsString()
-  ip: string;
+  @IsOptional()
+  @IsEnum(TipoPagamento)
+  type?: TipoPagamento;
 
-  @ApiProperty({ example: 9100, description: 'Porta da impressora' })
-  @IsNotEmpty()
+  @ApiProperty({
+    example: 'Aceita cartões de crédito e débito',
+    description: 'Descrição do método de pagamento',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    example: false,
+    description: 'Se é aceita troco',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  channel?: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'Status do método de pagamento',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  status?: boolean;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Taxa do método de pagamento',
+    required: false,
+  })
+  @IsOptional()
   @IsNumber()
-  porta: number;
-
-  @ApiProperty({
-    example: '00000000000000',
-    description: 'CNPJ/CPF do restaurante',
-  })
-  @IsNotEmpty()
-  @IsString()
-  restaurantCnpj: string;
+  taxa?: number;
 }
