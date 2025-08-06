@@ -5,7 +5,7 @@ const convertWebp = async (image: File) => {
 
   const buffer = Buffer.from(arrayBuffer);
   const imageBuffer = await sharp(buffer).webp({ quality: 80 }).toBuffer();
-  return new File([imageBuffer], 'image.webp', { type: 'image/webp' });
+  return new File([new Uint8Array(imageBuffer)], 'image.webp', { type: 'image/webp' });
 };
 
 export default convertWebp;
