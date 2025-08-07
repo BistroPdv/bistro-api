@@ -13,11 +13,30 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiHeader,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import { FastifyRequest } from 'fastify';
-import { CreatePedidosDto } from './dto/create-pedidos.dto';
-import { UpdatePedidosDto } from './dto/update-pedidos.dto';
+import {
+  CreatePedidosDto,
+  EXEMPLOS_ERRO_VALIDACAO,
+  EXEMPLOS_ERRO_VALIDACAO_UPDATE,
+  EXEMPLOS_RESPOSTA,
+  EXEMPLOS_RESPOSTA_GET_ALL,
+  EXEMPLOS_RESPOSTA_GET_BY_MESA,
+  EXEMPLOS_RESPOSTA_GET_ONE,
+  StatusPedido,
+  UpdatePedidosDto,
+} from './dto';
 import { PedidoProdutoComAdicionais, PedidosService } from './pedidos.service';
 
 @UseGuards(JwtAuthGuard)
@@ -28,6 +47,51 @@ export class PedidosController {
   constructor(private readonly pedidosService: PedidosService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Listar todos os pedidos',
+    description:
+      'Retorna uma lista paginada de todos os pedidos do restaurante autenticado',
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'Número da página',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Quantidade de itens por página',
+    required: false,
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'search',
+    description: 'Termo de busca (opcional)',
+    required: false,
+    example: 'PED123456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de pedidos retornada com sucesso',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_ALL.PEDIDOS_PAGINADOS,
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista vazia quando não há pedidos',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_ALL.PEDIDOS_VAZIOS,
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
   async findAll(
     @Query() query: PaginationQueryDto,
     @Req() req: FastifyRequest,
@@ -47,11 +111,113 @@ export class PedidosController {
   }
 
   @Get(':id')
+  @ApiOperation({
+    summary: 'Buscar pedido por ID',
+    description: 'Retorna um pedido específico pelo seu ID',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID único do pedido',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedido encontrado com sucesso',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_ONE.PEDIDO_ENCONTRADO,
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedido cancelado encontrado',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_ONE.PEDIDO_CANCELADO,
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Pedido não encontrado',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Pedido não encontrado',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
   async findOne(@Param('id') id: string, @Req() req: FastifyRequest) {
     return this.pedidosService.findOne(id, req.user.restaurantCnpj);
   }
 
   @Get('mesa/:id')
+  @ApiOperation({
+    summary: 'Buscar pedidos por mesa',
+    description:
+      'Retorna todos os pedidos de uma mesa específica com filtro opcional por status',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID da mesa',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiQuery({
+    name: 'status',
+    description: 'Filtrar pedidos por status',
+    enum: StatusPedido,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'Número da página',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Quantidade de itens por página',
+    required: false,
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedidos da mesa retornados com sucesso',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_BY_MESA.PEDIDOS_MESA_ABERTOS,
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedidos finalizados da mesa',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_BY_MESA.PEDIDOS_MESA_FINALIZADOS,
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Mesa sem pedidos',
+    schema: {
+      example: EXEMPLOS_RESPOSTA_GET_BY_MESA.PEDIDOS_MESA_VAZIOS,
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Mesa não encontrada',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Mesa não encontrada',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
   async findByMesa(
     @Param('id') id: string,
     @Query() query: PaginationQueryDto,
@@ -66,12 +232,48 @@ export class PedidosController {
     );
   }
 
-  @ApiConsumes('multipart/form-data')
+  @Post()
+  @ApiOperation({
+    summary: 'Criar novo pedido',
+    description: 'Cria um novo pedido com produtos e adicionais.',
+  })
+  @ApiConsumes('application/json')
   @ApiBody({
-    description: 'Criação de pedido',
+    description: 'Dados do pedido a ser criado',
     type: CreatePedidosDto,
   })
-  @Post()
+  @ApiResponse({
+    status: 201,
+    description: 'Pedido criado com sucesso',
+    schema: {
+      example: EXEMPLOS_RESPOSTA.PEDIDO_CRIADO,
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Dados inválidos - Verifique os campos obrigatórios e formatos',
+    schema: {
+      example: EXEMPLOS_ERRO_VALIDACAO.CAMPOS_OBRIGATORIOS,
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Mesa não encontrada ou produto não encontrado',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token JWT',
+    required: true,
+  })
   async create(
     @Req() req: FastifyRequest<{ Body: Prisma.PedidosCreateInput }>,
   ) {
@@ -98,17 +300,71 @@ export class PedidosController {
     }
   }
 
-  @ApiConsumes('multipart/form-data')
+  @Put(':id')
+  @ApiOperation({
+    summary: 'Atualizar pedido',
+    description:
+      'Atualiza um pedido existente. Esta é uma rota crítica que deve ser usada com cuidado.',
+  })
+  @ApiConsumes('application/json')
+  @ApiParam({
+    name: 'id',
+    description: 'ID do pedido a ser atualizado',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   @ApiBody({
-    description: 'Atualização de produto',
+    description: 'Dados do pedido a ser atualizado',
     type: UpdatePedidosDto,
   })
-  @Put(':id')
+  @ApiResponse({
+    status: 200,
+    description: 'Pedido atualizado com sucesso',
+    schema: {
+      example: EXEMPLOS_RESPOSTA.PEDIDO_ATUALIZADO,
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Dados inválidos - Verifique os campos obrigatórios e formatos',
+    schema: {
+      example: EXEMPLOS_ERRO_VALIDACAO_UPDATE.PEDIDO_ID_OBRIGATORIO,
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Pedido não encontrado',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'Bearer token JWT',
+    required: true,
+  })
   async update(
-    @Req() req: FastifyRequest<{ Params: { id: string } }>,
     @Param('id') id: string,
+    @Req() req: FastifyRequest<{ Body: UpdatePedidosDto }>,
   ) {
     try {
+      if (!req.user.restaurantCnpj) {
+        throw new HttpException('CNPJ não encontrado', HttpStatus.BAD_REQUEST);
+      }
+
+      // Converter o DTO para o formato esperado pelo service
+      const updateData = {
+        status: req.body.status,
+        pdvCodPedido: req.body.pdvCodPedido,
+        motivoCancelamento: req.body.motivoCancelamento,
+      };
+
+      return this.pedidosService.update(updateData, id);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -118,16 +374,46 @@ export class PedidosController {
     }
   }
 
-  @ApiBody({
-    description: 'Alterar Ordem de Exibição de um produto',
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Excluir pedido',
+    description: 'Exclui um pedido existente (soft delete)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID do pedido a ser excluído',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedido excluído com sucesso',
     schema: {
-      example: [
-        { id: 'string', ordem: 'number', categoriaId: 'string' },
-        { id: 'string', ordem: 'number', categoriaId: 'string' },
-      ],
+      example: {
+        id: '550e8400-e29b-41d4-a716-446655440000',
+        delete: true,
+        updatedAt: '2024-01-15T12:00:00.000Z',
+      },
     },
   })
-  @Delete(':id')
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Pedido não encontrado',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Pedido não encontrado',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
   async delete(@Param('id') id: string) {
     return this.pedidosService.delete(id);
   }

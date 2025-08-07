@@ -39,10 +39,6 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // await app.register(fastifySwagger as any);
-
-  // SwaggerModule.setup('docs', app, document);
-
   app.use(
     '/docs',
     apiReference({
