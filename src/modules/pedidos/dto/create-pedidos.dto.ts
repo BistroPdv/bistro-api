@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { TipoPedido } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -212,7 +213,22 @@ export class CreatePedidosDto {
   @IsUUID(PEDIDOS_VALIDATION_CONFIG.UUID_VERSION, {
     message: PEDIDOS_ERROR_MESSAGES.MESA_ID_UUID_INVALIDO,
   })
-  mesaId: string;
+  @IsOptional()
+  mesaId?: string;
+
+  @ApiProperty({
+    example: TipoPedido.COUNTER,
+    description: `Tipo de pedido (opcional, padrão: COUNTER), caso o pedido seja do tipo INDOOR, deve se informar a mesaId do restaurante'`,
+    enum: TipoPedido,
+    default: TipoPedido.COUNTER,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(TipoPedido, {
+    message:
+      'Caso o pedido seja do tipo INDOOR, deve se informar a mesaId do restaurante',
+  })
+  tipoPedido?: TipoPedido;
 
   @ApiProperty({
     example: StatusPedido.ABERTO,

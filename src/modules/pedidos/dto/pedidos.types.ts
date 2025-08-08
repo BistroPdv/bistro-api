@@ -3,12 +3,14 @@
  * Este arquivo contém todas as interfaces e tipos utilizados nos DTOs de pedidos
  */
 
+import { TipoPedido } from '@prisma/client';
 import { StatusPedido, StatusProduto } from './create-pedidos.dto';
 
 // Interface para resposta de criação de pedido
 export interface CreatePedidoResponse {
   id: string;
-  mesaId: string;
+  mesaId?: string;
+  tipoPedido: TipoPedido;
   status: StatusPedido;
   pdvCodPedido?: string;
   motivoCancelamento?: string;
@@ -20,7 +22,8 @@ export interface CreatePedidoResponse {
 // Interface para resposta de atualização de pedido
 export interface UpdatePedidoResponse {
   id: string;
-  mesaId: string;
+  mesaId?: string;
+  tipoPedido: TipoPedido;
   status: StatusPedido;
   pdvCodPedido?: string;
   motivoCancelamento?: string;
@@ -70,7 +73,8 @@ export interface UpdateAdicionalPedido {
 
 // Interface para pedido completo
 export interface PedidoCompleto {
-  mesaId: string;
+  mesaId?: string;
+  tipoPedido?: TipoPedido;
   status?: StatusPedido;
   pdvCodPedido?: string;
   motivoCancelamento?: string;
@@ -80,6 +84,7 @@ export interface PedidoCompleto {
 // Interface para pedido atualizado
 export interface UpdatePedidoCompleto {
   id: string;
+  tipoPedido?: TipoPedido;
   status?: StatusPedido;
   pdvCodPedido?: string;
   motivoCancelamento?: string;

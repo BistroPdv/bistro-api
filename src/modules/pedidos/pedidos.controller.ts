@@ -26,6 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
 import { FastifyRequest } from 'fastify';
+import { TablesService } from '../tables/tables.service';
 import {
   CreatePedidosDto,
   EXEMPLOS_ERRO_VALIDACAO,
@@ -44,7 +45,10 @@ import { PedidoProdutoComAdicionais, PedidosService } from './pedidos.service';
 @ApiTags('Pedidos')
 @Controller('pedidos')
 export class PedidosController {
-  constructor(private readonly pedidosService: PedidosService) {}
+  constructor(
+    private readonly pedidosService: PedidosService,
+    private readonly tablesService: TablesService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -275,12 +279,32 @@ export class PedidosController {
     required: true,
   })
   async create(
-    @Req() req: FastifyRequest<{ Body: Prisma.PedidosCreateInput }>,
+    @Req()
+    req: FastifyRequest<{
+      Body: Prisma.PedidosCreateInput & { mesaId?: string };
+    }>,
   ) {
     try {
       if (!req.user.restaurantCnpj) {
         throw new HttpException('CNPJ não encontrado', HttpStatus.BAD_REQUEST);
       }
+
+      // if (req.body.tipoPedido === 'INDOOR' && !req.body.mesaId) {
+      //   throw new HttpException('Mesa não encontrada', HttpStatus.BAD_REQUEST);
+      // } else {
+      //   if (req.body.mesaId) {
+      //     const mesa = await this.tablesService.findOne(
+      //       req.body.mesaId,
+      //       req.user.restaurantCnpj,
+      //     );
+      //     if (!mesa) {
+      //       throw new HttpException(
+      //         'Mesa não encontrada',
+      //         HttpStatus.BAD_REQUEST,
+      //       );
+      //     }
+      //   }
+      // }
 
       const produtos = req.body.produtos as PedidoProdutoComAdicionais[];
 

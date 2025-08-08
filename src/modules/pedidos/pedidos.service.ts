@@ -142,18 +142,23 @@ export class PedidosService {
   }
 
   async create(
-    data: Prisma.PedidosCreateInput,
+    data: Prisma.PedidosCreateInput & { mesaId?: string },
     produtos: PedidoProdutoComAdicionais[],
     cnpj: string,
   ) {
-    const create = await this.prisma.pedidos.create({
-      data: {
-        ...data,
-        restaurant: {
-          connect: { cnpj },
-        },
-        mesa: { connect: { id: data.mesa as string } },
+    const createData: Prisma.PedidosCreateInput = {
+      ...data,
+      restaurant: {
+        connect: { cnpj },
       },
+    };
+
+    if (data.mesaId) {
+      createData.mesa = { connect: { id: data.mesaId } };
+    }
+
+    const create = await this.prisma.pedidos.create({
+      data: createData,
     });
 
     if (create) {

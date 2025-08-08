@@ -9,28 +9,29 @@ import { PrismaService } from '@/database/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-interface PropsMesaNumber extends PaginationDto {
-  mesaNumber?: string;
+interface PropsPayment extends PaginationDto {
+  pedidoId?: string;
 }
 
 @Injectable()
-export class TablesService {
+export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
-  private select: Prisma.MesaSelect = {
+  private select: Prisma.PaymentsSelect = {
     id: true,
-    numero: true,
-    capacity: true,
-    location: true,
+    pedidoId: true,
+    paymentMethodId: true,
+    valor: true,
+    troco: true,
   };
 
-  async findAll(query: PropsMesaNumber) {
+  async findAll(query: PropsPayment) {
     const { page, limit, search, cnpj } = query;
     const { skip, take } = calculatePagination(page, limit);
 
     validatePrismaFields(Prisma.MesaScalarFieldEnum, search);
 
-    let where: Prisma.MesaWhereInput = search
+    let where: Prisma.PaymentsWhereInput = search
       ? Object.keys(search).reduce(
           (acc, key) => {
             acc[key] = { contains: search[key], mode: 'insensitive' };
@@ -40,18 +41,14 @@ export class TablesService {
         )
       : { delete: false, restaurant: { cnpj } };
 
-    if (query.mesaNumber) {
-      where = { ...where, numero: Number(query.mesaNumber) };
-    }
+    const total = await this.prisma.payments.count({ where });
 
-    const total = await this.prisma.mesa.count({ where });
-
-    const tables = await this.prisma.mesa.findMany({
+    const payments = await this.prisma.payments.findMany({
       where,
       skip,
       select: this.select,
       orderBy: {
-        numero: 'asc',
+        createdAt: 'asc',
       },
       take: take ?? total,
     });
@@ -60,49 +57,34 @@ export class TablesService {
       normalizePaginationResponse(page, limit, total);
 
     return new PaginationResponseDto(
-      tables,
+      payments,
       total,
       responsePage,
       responseLimit,
     );
   }
 
-  async findOne(numero: number | string, cnpj: string) {
-    return this.prisma.mesa.findFirst({
+  async findOne(id: string, cnpj: string) {
+    return this.prisma.payments.findFirst({
       where: {
-        OR: [{ numero: Number(numero) }, { id: numero.toString() }],
-        delete: false,
+        id,
         restaurantCnpj: cnpj,
       },
       select: this.select,
     });
   }
 
-  async create(data: Prisma.MesaCreateInput, cnpj: string, endNumber?: number) {
+  async create(
+    data: Prisma.PaymentsCreateInput & { pedidoId: string },
+    cnpj: string,
+  ) {
     try {
-      delete data.id;
-
-      if (endNumber && endNumber > data.numero) {
-        const mesas: any = [];
-        for (let i = data.numero; i <= endNumber; i++) {
-          const mesa = await this.prisma.mesa.create({
-            select: this.select,
-            data: {
-              ...data,
-              restaurant: { connect: { cnpj } },
-              numero: i,
-            },
-          });
-          mesas.push(mesa);
-        }
-        return mesas;
-      }
-
-      return this.prisma.mesa.create({
+      return this.prisma.payments.create({
         select: this.select,
         data: {
           ...data,
           restaurant: { connect: { cnpj } },
+          Pedidos: { connect: { id: data.pedidoId } },
         },
       });
     } catch (error) {
@@ -110,22 +92,15 @@ export class TablesService {
     }
   }
 
-  async update(data: Prisma.MesaUpdateInput, id: string) {
+  async update(data: Prisma.PaymentsUpdateInput, id: string) {
     //@ts-ignore
     delete data.endNumber;
-    return this.prisma.mesa.update({
+    return this.prisma.payments.update({
       where: { id },
       select: this.select,
       data: {
         ...data,
       },
-    });
-  }
-
-  async delete(id: string) {
-    return this.prisma.mesa.update({
-      where: { id },
-      data: { delete: true },
     });
   }
 }
