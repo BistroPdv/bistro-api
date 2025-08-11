@@ -48,8 +48,8 @@ RUN npm install -g pnpm
 # Copiar package.json e pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml ./
 
-# Instalar apenas dependências de produção
-RUN pnpm install --prod --frozen-lockfile
+# Instalar dependências de produção E devDependencies necessárias para Prisma
+RUN pnpm install --frozen-lockfile
 
 # Copiar Prisma schema e migrations
 COPY --from=builder /app/prisma ./prisma
