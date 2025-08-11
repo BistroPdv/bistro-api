@@ -289,6 +289,8 @@ export class PedidosController {
         throw new HttpException('CNPJ não encontrado', HttpStatus.BAD_REQUEST);
       }
 
+      // TODO: VERIFICAR LOGICA PARA QUANDO FOR INDOOR, VERIFICAR SE A MESA EXISTE E SE ELA ESTA DENTRO DO RANGE DO RESTAURANTE E SE NÃO ESTA OCUPADA
+
       // if (req.body.tipoPedido === 'INDOOR' && !req.body.mesaId) {
       //   throw new HttpException('Mesa não encontrada', HttpStatus.BAD_REQUEST);
       // } else {

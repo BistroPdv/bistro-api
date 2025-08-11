@@ -142,11 +142,15 @@ export class PedidosService {
   }
 
   async create(
-    data: Prisma.PedidosCreateInput & { mesaId?: string },
+    data: Prisma.PedidosCreateInput & {
+      mesaId?: string;
+      caixaId?: string;
+      userId?: string;
+    },
     produtos: PedidoProdutoComAdicionais[],
     cnpj: string,
   ) {
-    const createData: Prisma.PedidosCreateInput = {
+    const createData: Prisma.PedidosCreateInput & { caixaId?: string } = {
       ...data,
       restaurant: {
         connect: { cnpj },
@@ -157,7 +161,22 @@ export class PedidosService {
       createData.mesa = { connect: { id: data.mesaId } };
     }
 
+    if (data.caixaId) {
+      createData.Caixa = { connect: { id: data.caixaId } };
+    }
+
+    if (data.userId) {
+      createData.user = { connect: { id: data.userId } };
+    }
+
+    delete data.caixaId;
+    delete data.userId;
+    delete createData.caixaId;
+    //@ts-ignore
+    delete createData.userId;
+
     const create = await this.prisma.pedidos.create({
+      //@ts-ignore
       data: createData,
     });
 
