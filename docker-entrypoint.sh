@@ -9,7 +9,10 @@ echo "🚀 Iniciando Bistro API..."
 
 # Aguardar conexão com o banco de dados
 echo "⏳ Aguardando conexão com o banco de dados..."
-until pnpm prisma db execute --stdin <<< "SELECT 1" > /dev/null 2>&1; do
+until pnpm prisma db execute --stdin << 'EOF' > /dev/null 2>&1
+SELECT 1;
+EOF
+do
   echo "⏳ Banco de dados ainda não está disponível, aguardando..."
   sleep 2
 done
