@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { BannerModule } from './modules/banner/banner.module';
+import { CaixaModule } from './modules/caixa/caixa.module';
 import { CategoryModule } from './modules/category/category.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GroupAdicionaisModule } from './modules/group-adicionais/group-adicionais.module';
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module';
     GroupAdicionaisModule,
     PaymentMethodModule,
     PaymentsModule,
+    CaixaModule,
   ],
 })
 export class AppModule {}

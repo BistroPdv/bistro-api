@@ -32,6 +32,7 @@ model User {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   Caixa          Caixa[]
+  Pedidos        Pedidos[]
 
   @@unique([email, restaurantCnpj])
   @@unique([username, restaurantCnpj, delete])
@@ -316,6 +317,8 @@ model Pedidos {
   updatedAt          DateTime        @updatedAt
   Caixa              Caixa?          @relation(fields: [caixaId], references: [id])
   caixaId            String?
+  user               User?           @relation(fields: [userId], references: [id])
+  userId             String?
 }
 
 model Payments {
