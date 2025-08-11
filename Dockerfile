@@ -63,6 +63,10 @@ COPY --from=builder /app/src/assets ./src/assets
 # Gerar Prisma Client na imagem de produção
 RUN pnpm prisma generate
 
+# Script de inicialização com Prisma
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Definir permissões corretas
 RUN chown -R nestjs:nodejs /app
 
@@ -75,10 +79,6 @@ EXPOSE 4000
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
-
-# Script de inicialização com Prisma
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/main"]
