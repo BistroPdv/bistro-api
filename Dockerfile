@@ -56,4 +56,4 @@ EXPOSE 4000
 ENV NODE_ENV=production
 
 # Comando de inicialização do container
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]
