@@ -1,8 +1,8 @@
 {
-  "name": "estudo",
+  "name": "bistro-api",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "API do Bistro",
+  "author": "Bistro",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
