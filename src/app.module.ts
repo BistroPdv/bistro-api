@@ -6,6 +6,7 @@ import { CaixaModule } from './modules/caixa/caixa.module';
 import { CategoryModule } from './modules/category/category.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GroupAdicionaisModule } from './modules/group-adicionais/group-adicionais.module';
+import { IntegrationsModule } from './modules/Integrations/integrations.module';
 import { PaymentMethodModule } from './modules/payment-method/payment-method.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { PedidosModule } from './modules/pedidos/pedidos.module';
@@ -34,6 +35,7 @@ import { UsersModule } from './modules/users/users.module';
     PaymentMethodModule,
     PaymentsModule,
     CaixaModule,
+    IntegrationsModule,
   ],
 })
 export class AppModule {}

@@ -17,6 +17,9 @@ export class ProductsService {
   private select: Prisma.ProdutoSelect = {
     id: true,
     nome: true,
+    externoId: true,
+    ordem: true,
+    ativo: true,
     descricao: true,
     preco: true,
     imagem: true,

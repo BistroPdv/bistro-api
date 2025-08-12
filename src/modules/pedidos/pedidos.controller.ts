@@ -1,6 +1,11 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import {
+  ApiOmieService,
+  ItemsCreate,
+} from '@/common/services/api-omie.service';
+import { PrismaService } from '@/database/prisma/prisma.service';
+import {
   Controller,
   Delete,
   Get,
@@ -48,6 +53,8 @@ export class PedidosController {
   constructor(
     private readonly pedidosService: PedidosService,
     private readonly tablesService: TablesService,
+    private readonly prisma: PrismaService,
+    private readonly apiOmieService: ApiOmieService,
   ) {}
 
   @Get()
@@ -312,11 +319,80 @@ export class PedidosController {
 
       delete req.body.produtos;
 
-      return this.pedidosService.create(
+      const result = await this.pedidosService.create(
         req.body,
         produtos,
         req.user.restaurantCnpj,
       );
+
+      let tempProd: ItemsCreate[] = [];
+      for (let i = 0; i < produtos.length; i++) {
+        const p = produtos[i];
+        const value = await this.prisma.produto.findUnique({
+          where: { id: p.produtoId },
+        });
+        tempProd.push({
+          codigo_produto: Number(value?.externoId),
+          quantidade: p.quantidade,
+          valor_unitario: value?.preco,
+          cfop: '5102',
+        });
+
+        // Adicionar adicionais válidos ao pedido
+        if (p.adicionais && Array.isArray(p.adicionais)) {
+          for (const adicional of p.adicionais) {
+            if (adicional.codIntegra && adicional.price > 0) {
+              tempProd.push({
+                codigo_produto: Number(adicional.codIntegra),
+                quantidade: adicional.quantidade,
+                valor_unitario: adicional.price,
+                cfop: '5102',
+              });
+            }
+          }
+        }
+      }
+
+      const restaurant = await this.prisma.restaurant.findUnique({
+        where: { cnpj: req.user.restaurantCnpj },
+        select: {
+          integrationOmie: true,
+          pdvIntegrations: true,
+        },
+      });
+
+      if (
+        result &&
+        produtos.length > 0 &&
+        restaurant?.pdvIntegrations === 'OMIE'
+      ) {
+        if (
+          !restaurant?.integrationOmie?.omie_key ||
+          !restaurant?.integrationOmie?.omie_secret
+        ) {
+          throw new HttpException(
+            'Configuração do Omie não encontrada',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        const resp = await this.apiOmieService.createProductOmie(
+          restaurant?.integrationOmie?.omie_key,
+          restaurant?.integrationOmie?.omie_secret,
+          result.id,
+          tempProd,
+        );
+
+        if (resp.data.codigo_pedido) {
+          await this.prisma.pedidos.update({
+            where: { id: result.id },
+            data: {
+              pdvCodPedido: String(resp.data.codigo_pedido),
+            },
+          });
+        }
+      }
+
+      return result;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
