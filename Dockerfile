@@ -1,84 +1,59 @@
 # Dockerfile para Bistro API com Prisma
 # Multi-stage build para otimização
 
-# Stage 1: Dependências de desenvolvimento
-FROM node:18-alpine AS deps
+# Estágio de build
+FROM node:18-alpine AS builder
+
 WORKDIR /app
 
-# Instalar pnpm globalmente
+# Instala dependências necessárias para o Prisma
+RUN apk add --no-cache openssl
+
+# Instala pnpm globalmente
 RUN npm install -g pnpm
 
-# Copiar arquivos de dependências
+# Copia arquivos de configuração primeiro
 COPY package.json pnpm-lock.yaml ./
+COPY tsconfig*.json ./
+COPY prisma ./prisma/
 
-# Instalar todas as dependências (incluindo devDependencies)
+# Instala as dependências
 RUN pnpm install --frozen-lockfile
 
-# Stage 2: Build da aplicação
-FROM node:18-alpine AS builder
-WORKDIR /app
-
-# Instalar pnpm globalmente
-RUN npm install -g pnpm
-
-# Copiar dependências do stage anterior
-COPY --from=deps /app/node_modules ./node_modules
+# Copia o resto dos arquivos
 COPY . .
 
-# Gerar Prisma Client
-RUN pnpm prisma generate
+# Gera o Prisma Client e faz o build do TypeScript
+RUN pnpm prisma generate && pnpm run build
 
-# Build da aplicação
-RUN pnpm run build
+# Executa migrações e seeds diretamente no build
+RUN pnpm prisma migrate deploy && pnpm prisma db seed
 
-# Stage 3: Produção
-FROM node:18-alpine AS runner
+# Estágio de produção
+FROM node:18-alpine AS production
+
 WORKDIR /app
 
-# Instalar dependências necessárias para produção
-RUN apk add --no-cache dumb-init
+# Instala dependências necessárias para o Prisma em produção
+RUN apk add --no-cache openssl tzdata
 
-# Criar usuário não-root para segurança
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+# Define o timezone do sistema
+ENV TZ=America/Sao_Paulo
 
-# Instalar pnpm globalmente
+# Instala pnpm globalmente
 RUN npm install -g pnpm
 
-# Copiar package.json e pnpm-lock.yaml
-COPY package.json pnpm-lock.yaml ./
-
-# Instalar dependências de produção E devDependencies necessárias para Prisma
-RUN pnpm install --frozen-lockfile
-
-# Copiar Prisma schema e migrations
+# Copia apenas os arquivos necessários do estágio de build
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
 
-# Copiar arquivos buildados
-COPY --from=builder /app/dist ./dist
-
-# Copiar assets se necessário
-COPY --from=builder /app/src/assets ./src/assets
-
-# Gerar Prisma Client na imagem de produção
-RUN pnpm prisma generate
-
-# Script de inicialização com Prisma
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Definir permissões corretas
-RUN chown -R nestjs:nodejs /app
-
-# Mudar para usuário não-root
-USER nestjs
-
-# Expor porta
+# Expõe a porta 4000
 EXPOSE 4000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:4000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+# Define as variáveis de ambiente para produção
+ENV NODE_ENV=production
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Comando de inicialização do container
 CMD ["node", "dist/main"]
