@@ -2,7 +2,7 @@
 # Multi-stage build para otimização
 
 # Estágio de build
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ RUN pnpm prisma generate && pnpm run build
 RUN pnpm prisma migrate deploy && pnpm prisma db seed
 
 # Estágio de produção
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
