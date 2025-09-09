@@ -43,6 +43,11 @@ export class CaixaController {
     return this.caixaService.findOne(id, req.user.restaurantCnpj);
   }
 
+  @Get(':id/close')
+  async findOneClose(@Param('id') id: string, @Req() req: FastifyRequest) {
+    return this.caixaService.findOneClose(id, req.user.restaurantCnpj);
+  }
+
   @Get('user')
   async findUserOne(@Req() req: FastifyRequest) {
     return this.caixaService.findOneUser(
@@ -130,6 +135,20 @@ export class CaixaController {
     @Req() req: FastifyRequest<{ Body: Prisma.CaixaMovimentacaoUpdateInput }>,
   ) {
     return this.caixaService.updateMovementCaixa(movementId, id, req.body);
+  }
+
+  @ApiBody({
+    description: 'Fechamento de caixa',
+  })
+  @Post(':id/close')
+  async closeCaixa(
+    @Param('id') id: string,
+    @Req()
+    req: FastifyRequest<{
+      Body: { methods: { id: string; valor: number }[] };
+    }>,
+  ) {
+    return this.caixaService.closeCaixa(id, req.body.methods);
   }
 
   @Delete(':id')
