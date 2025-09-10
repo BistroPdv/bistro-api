@@ -195,6 +195,7 @@ export class CaixaService {
           nome: metodo.methodPayment.name,
           tipo: metodo.methodPayment.type,
           valorInformado: metodo.valor,
+          descricao: metodo.methodPayment.description || '',
           valorReal,
           diferenca,
         };
