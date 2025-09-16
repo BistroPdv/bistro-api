@@ -205,6 +205,7 @@ model CaixaMovimentacao {
   caixaId   String
   caixa     Caixa            @relation(fields: [caixaId], references: [id])
   valor     Float
+  obs       String?
   tipo      TipoMovimentacao
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt

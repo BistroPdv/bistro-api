@@ -7,7 +7,7 @@ import {
 import { buildWhere } from '@/common/utils/prisma-query-builder';
 import { validatePrismaFields } from '@/common/utils/prisma-validator';
 import { PrismaService } from '@/database/prisma/prisma.service';
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { orderBy } from 'lodash';
 
@@ -100,9 +100,11 @@ export class MovementService {
     tipo: true,
   };
 
-  async findAll(query: PaginationDto) {
+  async findAll(query: PaginationDto, userId?: string) {
     const { page, limit, search, cnpj } = query;
     const { skip, take } = calculatePagination(page, limit);
+
+    let caixaId: string | undefined;
 
     validatePrismaFields(
       {
@@ -117,6 +119,15 @@ export class MovementService {
       search,
       cnpj,
     );
+
+    if (userId) {
+      const caixa = await this.prisma.caixa.findFirst({
+        where: { userId, NOT: { status: false } },
+      });
+      caixaId = caixa?.id;
+      whereCaixa.caixaId = caixaId;
+      wherePedidos.caixaId = caixaId;
+    }
 
     //@ts-ignore
     delete whereCaixa.delete;
@@ -196,5 +207,26 @@ export class MovementService {
       responsePage,
       responseLimit,
     );
+  }
+
+  async createMovementCaixa(
+    data: Prisma.CaixaMovimentacaoCreateInput,
+    userId: string,
+  ) {
+    const caixa = await this.prisma.caixa.findFirst({
+      where: { userId, NOT: { status: false } },
+    });
+
+    if (!caixa) {
+      throw new NotFoundException('Caixa não encontrado');
+    }
+
+    const mov = this.prisma.caixaMovimentacao.create({
+      data: {
+        ...data,
+        caixa: { connect: { id: caixa.id } },
+      },
+    });
+    return mov;
   }
 }

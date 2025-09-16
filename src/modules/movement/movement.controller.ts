@@ -5,12 +5,15 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  Post,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { FastifyRequest } from 'fastify';
+import { CreateMovementDto } from './dto/create-moviment.dto';
 import { MovementService } from './movement.service';
 
 @UseGuards(JwtAuthGuard)
@@ -31,10 +34,13 @@ export class MovementController {
     @Req() req: FastifyRequest,
   ) {
     try {
-      return this.movementService.findAll({
-        ...query,
-        cnpj: req.user.restaurantCnpj,
-      });
+      return this.movementService.findAll(
+        {
+          ...query,
+          cnpj: req.user.restaurantCnpj,
+        },
+        req.user.userId,
+      );
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -42,5 +48,20 @@ export class MovementController {
       console.error(error);
       throw new HttpException('Erro interno', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Criar movimentação de caixa',
+    description: 'Cria uma nova movimentação de caixa',
+  })
+  @ApiBody({
+    description: 'Dados da movimentação de caixa',
+    type: CreateMovementDto,
+  })
+  async createMovementCaixa(
+    @Req() req: FastifyRequest<{ Body: Prisma.CaixaMovimentacaoCreateInput }>,
+  ) {
+    return this.movementService.createMovementCaixa(req.body, req.user.userId);
   }
 }
