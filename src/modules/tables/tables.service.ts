@@ -78,6 +78,56 @@ export class TablesService {
     });
   }
 
+  async findAvailability(cnpj: string) {
+    const availability = {
+      tablesAvailable: 0,
+      tablesUnavailable: 0,
+      dataTables: [],
+      availabilityCapacity: {} as Record<number, number>,
+    };
+    const pedidos = await this.prisma.pedidos.findMany({
+      where: {
+        delete: false,
+        restaurantCnpj: cnpj,
+        status: 'ABERTO',
+      },
+      select: {
+        mesaId: true,
+      },
+    });
+
+    const mesas = await this.prisma.mesa.findMany({
+      where: {
+        delete: false,
+        restaurantCnpj: cnpj,
+      },
+      select: {
+        id: true,
+        numero: true,
+        capacity: true,
+        inUse: true,
+        group: true,
+      },
+      orderBy: {
+        numero: 'asc',
+      },
+    });
+
+    const mesasAvailable = mesas.map((mesa) => {
+      if (pedidos.some((pedido) => pedido.mesaId === mesa.id)) {
+        availability.tablesUnavailable++;
+        return { ...mesa, available: false };
+      }
+      availability.tablesAvailable++;
+      availability.availabilityCapacity[mesa.capacity || 0] =
+        (availability.availabilityCapacity[mesa.capacity || 0] || 0) + 1;
+      return { ...mesa, available: true };
+    });
+    availability.dataTables = mesasAvailable as any;
+
+    return availability;
+  }
+
   async create(data: Prisma.MesaCreateInput, cnpj: string, endNumber?: number) {
     try {
       delete data.id;

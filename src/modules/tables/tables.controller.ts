@@ -35,11 +35,7 @@ export class TablesController {
   constructor(private readonly tablesService: TablesService) {}
 
   @Get()
-  async findAll(
-    @Query() query: PropsQueryDtoMesa,
-    @Req() req: FastifyRequest,
-  ) {
-    
+  async findAll(@Query() query: PropsQueryDtoMesa, @Req() req: FastifyRequest) {
     return this.tablesService.findAll({
       ...query,
       cnpj: req.user.restaurantCnpj,
@@ -51,11 +47,15 @@ export class TablesController {
     return this.tablesService.findOne(Number(id), req.user.restaurantCnpj);
   }
 
+  @Get('availability')
+  async findAvailability(@Req() req: FastifyRequest) {
+    return this.tablesService.findAvailability(req.user.restaurantCnpj);
+  }
+
   // @Get(':mesaNumber')
   // async findTable(@Param('mesaNumber') mesaNumber: string, @Req() req: FastifyRequest) {
   //   return this.tablesService.findOne(Number(mesaNumber), req.user.restaurantCnpj);
   // }
-
   @ApiBody({
     description: 'Criação de mesa',
     type: CreateTableDto,

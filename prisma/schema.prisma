@@ -280,6 +280,8 @@ model Mesa {
   delete         Boolean    @default(false)
   capacity       Int?
   location       String?
+  inUse          Int?       @default(0)
+  group          String?
   restaurantCnpj String
   restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
   createdAt      DateTime   @default(now())
