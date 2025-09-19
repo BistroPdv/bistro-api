@@ -68,6 +68,8 @@ export class PrintersService {
 
   async create(data: Prisma.ImpressoraCreateInput, cnpj: string) {
     delete data.id;
+    // @ts-ignore
+    delete data.restaurantCnpj;
     return this.prisma.impressora.create({
       select: this.select,
       data: {
