@@ -132,6 +132,7 @@ describe('PedidosController', () => {
     it('deve retornar pedidos da mesa com sucesso', async () => {
       const mesaId = '550e8400-e29b-41d4-a716-446655440000';
       const query: PaginationQueryDto = { page: 1, limit: 10 };
+      const prodImage = 'false';
       const status = 'ABERTO' as StatusPedido;
       const expectedResult = {
         data: [],
@@ -147,6 +148,7 @@ describe('PedidosController', () => {
         mesaId,
         query,
         status,
+        prodImage,
         mockRequest,
       );
 
@@ -155,6 +157,7 @@ describe('PedidosController', () => {
         mockRequest.user.restaurantCnpj,
         query,
         status,
+        false,
       );
       expect(result).toEqual(expectedResult);
     });
@@ -162,6 +165,7 @@ describe('PedidosController', () => {
     it('deve retornar pedidos da mesa sem status', async () => {
       const mesaId = '550e8400-e29b-41d4-a716-446655440000';
       const query: PaginationQueryDto = { page: 1, limit: 10 };
+      const prodImage = 'false';
       const expectedResult = {
         data: [],
         total: 0,
@@ -176,6 +180,7 @@ describe('PedidosController', () => {
         mesaId,
         query,
         undefined as any,
+        prodImage,
         mockRequest,
       );
 
@@ -184,6 +189,7 @@ describe('PedidosController', () => {
         mockRequest.user.restaurantCnpj,
         query,
         undefined,
+        false,
       );
       expect(result).toEqual(expectedResult);
     });

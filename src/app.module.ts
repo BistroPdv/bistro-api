@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { BannerModule } from './modules/banner/banner.module';
 import { CaixaModule } from './modules/caixa/caixa.module';
 import { CategoryModule } from './modules/category/category.module';
+import { CommandedModule } from './modules/commanded/commanded.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { GroupAdicionaisModule } from './modules/group-adicionais/group-adicionais.module';
 import { IntegrationsModule } from './modules/Integrations/integrations.module';
@@ -38,6 +39,7 @@ import { UsersModule } from './modules/users/users.module';
     CaixaModule,
     IntegrationsModule,
     MovementModule,
+    CommandedModule,
   ],
 })
 export class AppModule {}

@@ -233,13 +233,16 @@ export class PedidosController {
     @Param('id') id: string,
     @Query() query: PaginationQueryDto,
     @Query('status') status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+    @Query('prodImage') prodImage: string,
     @Req() req: FastifyRequest,
   ) {
+    const isProdImage = prodImage === 'true';
     return this.pedidosService.findByMesa(
       id,
       req.user.restaurantCnpj,
       query,
       status,
+      isProdImage,
     );
   }
 

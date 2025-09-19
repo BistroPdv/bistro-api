@@ -27,7 +27,7 @@ export interface PedidoProdutoComAdicionais
 export class PedidosService {
   constructor(private prisma: PrismaService) {}
 
-  private select: Prisma.PedidosSelect = {
+  private select = (prodImage?: boolean): Prisma.PedidosSelect => ({
     id: true,
     status: true,
     pdvCodPedido: true,
@@ -41,6 +41,7 @@ export class PedidosService {
             preco: true,
             descricao: true,
             codigo: true,
+            imagem: prodImage,
           },
         },
         obs: true,
@@ -57,7 +58,7 @@ export class PedidosService {
         status: true,
       },
     },
-  };
+  });
 
   async findAll(query: PaginationDto) {
     const { page, limit, search, cnpj } = query;
@@ -72,7 +73,7 @@ export class PedidosService {
     const pedidos = await this.prisma.pedidos.findMany({
       where,
       skip,
-      select: this.select,
+      select: this.select(),
       orderBy: {
         createdAt: 'desc',
       },
@@ -93,7 +94,7 @@ export class PedidosService {
   async findOne(id: string, cnpj: string) {
     return this.prisma.pedidos.findUnique({
       where: { id, delete: false, restaurant: { cnpj } },
-      select: this.select,
+      select: this.select(),
     });
   }
 
@@ -102,6 +103,7 @@ export class PedidosService {
     cnpj: string,
     query: PaginationQueryDto,
     status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+    prodImage?: boolean,
   ) {
     const { page, limit } = query;
     const { skip, take } = calculatePagination(page, limit);
@@ -120,6 +122,7 @@ export class PedidosService {
 
     const where: Prisma.PedidosWhereInput = {
       delete: false,
+      mesaId: id,
       restaurantCnpj: cnpj,
       ...(status ? { status } : {}),
     };
@@ -127,7 +130,9 @@ export class PedidosService {
     const [data, total] = await Promise.all([
       this.prisma.pedidos.findMany({
         where,
-        select: this.select,
+        select: {
+          ...this.select(prodImage ?? false),
+        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -212,7 +217,7 @@ export class PedidosService {
   async update(data: Prisma.PedidosUpdateInput, id: string) {
     return this.prisma.pedidos.update({
       where: { id },
-      select: this.select,
+      select: this.select(),
       data: {
         ...data,
       },

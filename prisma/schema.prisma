@@ -85,6 +85,7 @@ model Restaurant {
   PaymentMethod       PaymentMethod[]
   Payments            Payments[]
   Caixa               Caixa[]
+  Comanda             Comanda[]
 }
 
 model Filial {
@@ -263,6 +264,7 @@ model Produto {
 enum StatusPedido {
   ABERTO
   FINALIZADO
+  AGUARDANDO_PG
   CANCELADO
 }
 
@@ -272,6 +274,7 @@ enum StatusProduto {
   CANCELADO
   PRONTO
   ENTREGUE
+  ENVIADO
 }
 
 model Mesa {
@@ -289,6 +292,22 @@ model Mesa {
   pedidos        Pedidos[]
 
   @@unique([numero, restaurantCnpj])
+}
+
+enum StatusComanda {
+  ABERTO
+  AGUARDANDO_PG
+  FECHADO
+}
+
+model Comanda {
+  id             String        @id @default(uuid())
+  numero         Int
+  status         StatusComanda @default(FECHADO)
+  restaurantCnpj String
+  restaurant     Restaurant    @relation(fields: [restaurantCnpj], references: [cnpj])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model Cliente {
