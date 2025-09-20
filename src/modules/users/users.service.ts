@@ -54,9 +54,9 @@ export class UsersService {
     });
   }
 
-  async findByUsername(username: string) {
+  async findByUsername(username: string, cnpj: string) {
     return this.prisma.user.findFirst({
-      where: { username },
+      where: { username, restaurant: { cnpj } },
     });
   }
 

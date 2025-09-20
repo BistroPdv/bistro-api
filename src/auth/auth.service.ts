@@ -30,7 +30,10 @@ export class AuthService {
     password: string,
     restaurantCnpj: string,
   ): Promise<TypeUserAuth> {
-    const user = await this.usersService.findByUsername(username);
+    const user = await this.usersService.findByUsername(
+      username,
+      restaurantCnpj,
+    );
     const restaurant = await this.restaurantsService.findOne(restaurantCnpj);
 
     if (!restaurant) {
