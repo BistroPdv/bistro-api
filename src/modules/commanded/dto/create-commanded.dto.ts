@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export enum StatusComanda {
   ABERTO = 'ABERTO',
@@ -33,4 +39,21 @@ export class CreateCommandedDto {
   @IsOptional()
   @IsString()
   restaurantCnpj: string;
+}
+
+export class CreateCommandedRangeDto {
+  @ApiProperty({
+    example: 1,
+    description: 'Range de números de comandas',
+  })
+  @IsNotEmpty()
+  of: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Número final do range de comandas',
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  to: number;
 }

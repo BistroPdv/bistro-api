@@ -50,6 +50,7 @@ export class SettingsController {
         phone: '1234567890',
         email: 'joao@teste.com',
         pdvIntegrations: 'OMIE',
+        typeService: 'TABLE',
         integrationOmie: {
           omie_key: '1234567890',
           omie_secret: '1234567890',

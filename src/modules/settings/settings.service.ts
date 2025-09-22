@@ -32,6 +32,7 @@ export class SettingsService {
     printerNotification: true,
     printerBill: true,
     email: true,
+    typeService: true,
     phone: true,
     Banner: {
       where: {
@@ -77,6 +78,7 @@ export class SettingsService {
       data: {
         name: fields.name,
         phone: fields.phone,
+        typeService: fields.typeService,
         email: fields.email,
         printerNotification: fields.printerNotification,
         printerBill: fields.printerBill,
@@ -90,6 +92,7 @@ export class SettingsService {
         pdvIntegrations: true,
         integrationOmie: { select: { omie_key: true, omie_secret: true } },
         phone: true,
+        typeService: true,
       },
     });
 
@@ -113,7 +116,7 @@ export class SettingsService {
     if (update && file) {
       // Enviar para o S3
       const returnFile = await s3Helper.post(file, cnpj + `/logo`);
-      console.log('ARQUIVO ENVIADO')
+      console.log('ARQUIVO ENVIADO');
       if (!returnFile) {
         throw new HttpException(
           'Erro ao fazer upload do arquivo',
@@ -129,6 +132,7 @@ export class SettingsService {
           },
           select: {
             Banner: { select: { url: true, nome: true } },
+            typeService: true,
             email: true,
             adminPassword: true,
             name: true,

@@ -1,4 +1,5 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import {
   Body,
   Controller,
@@ -7,13 +8,17 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { FastifyRequest } from 'fastify';
 import { CommandedService } from './commanded.service';
-import { CreateCommandedDto } from './dto/create-commanded.dto';
+import {
+  CreateCommandedDto,
+  CreateCommandedRangeDto,
+} from './dto/create-commanded.dto';
 import { UpdateCommandedDto } from './dto/update-commanded.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -33,14 +38,32 @@ export class CommandedController {
     const cnpj = req.user.restaurantCnpj;
     return this.commandedService.create(createCommandedDto, cnpj);
   }
+  @ApiOperation({
+    summary: 'Criar um range de comandas',
+    description: 'Cria um range de comandas para o restaurante autenticado',
+  })
+  @Post('range')
+  register(
+    @Body() registerCommandedDto: CreateCommandedRangeDto,
+    @Req() req: FastifyRequest,
+  ) {
+    const cnpj = req.user.restaurantCnpj;
+    return this.commandedService.creteRange(registerCommandedDto, cnpj);
+  }
 
   @ApiOperation({
     summary: 'Listar todas as comandas',
     description: 'Lista todas as comandas do restaurante autenticado',
   })
   @Get()
-  findAll() {
-    return this.commandedService.findAll();
+  async findAll(
+    @Query() query: PaginationQueryDto,
+    @Req() req: FastifyRequest,
+  ) {
+    return this.commandedService.findAll({
+      ...query,
+      cnpj: req.user.restaurantCnpj,
+    });
   }
 
   @ApiOperation({
@@ -48,7 +71,7 @@ export class CommandedController {
     description: 'Lista uma comanda do restaurante autenticado',
   })
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @Req() req: FastifyRequest) {
     return this.commandedService.findOne(+id);
   }
 

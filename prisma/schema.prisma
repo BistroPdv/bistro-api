@@ -56,6 +56,12 @@ model WhiteLabel {
   primaryColor   String
 }
 
+enum TypeService {
+  TABLE
+  TABLE_COMMANDED
+  COMMANDED
+}
+
 model Restaurant {
   cnpj                String           @id @unique
   name                String
@@ -75,6 +81,7 @@ model Restaurant {
   delete              Boolean          @default(false) // Para controlar o status
   printerNotification String?
   printerBill         String?
+  typeService         TypeService      @default(TABLE)
   adminPassword       String?          @default("admin123")
   WhiteLabel          WhiteLabel?
   Mesa                Mesa[]
@@ -278,18 +285,19 @@ enum StatusProduto {
 }
 
 model Mesa {
-  id             String     @id @default(uuid())
+  id             String          @id @default(uuid())
   numero         Int
-  delete         Boolean    @default(false)
+  delete         Boolean         @default(false)
   capacity       Int?
   location       String?
-  inUse          Int?       @default(0)
+  inUse          Int?            @default(0)
   group          String?
   restaurantCnpj String
-  restaurant     Restaurant @relation(fields: [restaurantCnpj], references: [cnpj])
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  restaurant     Restaurant      @relation(fields: [restaurantCnpj], references: [cnpj])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   pedidos        Pedidos[]
+  PedidoProduto  PedidoProduto[]
 
   @@unique([numero, restaurantCnpj])
 }
@@ -301,13 +309,14 @@ enum StatusComanda {
 }
 
 model Comanda {
-  id             String        @id @default(uuid())
+  id             String          @id @default(uuid())
   numero         Int
-  status         StatusComanda @default(FECHADO)
+  pedidos        Pedidos[]
   restaurantCnpj String
-  restaurant     Restaurant    @relation(fields: [restaurantCnpj], references: [cnpj])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  restaurant     Restaurant      @relation(fields: [restaurantCnpj], references: [cnpj])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  PedidoProduto  PedidoProduto[]
 }
 
 model Cliente {
@@ -351,8 +360,10 @@ enum TipoPedido {
 
 model Pedidos {
   id                 String          @id @default(uuid())
-  mesa               Mesa?           @relation(fields: [mesaId], references: [id])
   mesaId             String?
+  mesa               Mesa?           @relation(fields: [mesaId], references: [id])
+  comandaId          String?
+  comanda            Comanda?        @relation(fields: [comandaId], references: [id])
   status             StatusPedido
   motivoCancelamento String?
   pdvCodPedido       String?
@@ -365,10 +376,10 @@ model Pedidos {
   restaurant         Restaurant      @relation(fields: [restaurantCnpj], references: [cnpj])
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+  userId             String?
   Caixa              Caixa?          @relation(fields: [caixaId], references: [id])
   caixaId            String?
   user               User?           @relation(fields: [userId], references: [id])
-  userId             String?
 }
 
 model Payments {
@@ -394,7 +405,11 @@ model PedidoProduto {
   externoId    String?
   obs          String?
   status       StatusProduto
+  commandedId  String?
+  commanded    Comanda?                 @relation(fields: [commandedId], references: [id])
   quantidade   Int
+  mesaId       String?
+  mesa         Mesa?                    @relation(fields: [mesaId], references: [id])
   cupom_fiscal Boolean                  @default(true)
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
