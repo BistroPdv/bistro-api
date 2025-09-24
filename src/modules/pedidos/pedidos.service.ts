@@ -58,6 +58,38 @@ export class PedidosService {
         status: true,
       },
     },
+    HistoryPedido: {
+      select: {
+        type: true,
+        pedidoId: true,
+        pedido: {
+          select: {
+            produtos: {
+              select: {
+                produto: {
+                  select: {
+                    nome: true,
+                    preco: true,
+                    descricao: true,
+                    codigo: true,
+                    imagem: prodImage,
+                  },
+                },
+                adicionais: {
+                  select: {
+                    adicional: {
+                      select: { nome: true, preco: true, codIntegra: true },
+                    },
+                    quantidade: true,
+                    preco: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   });
 
   async findAll(query: PaginationDto) {
@@ -186,10 +218,17 @@ export class PedidosService {
     });
 
     if (create) {
+      await this.prisma.historyPedido.create({
+        data: {
+          pedidoId: create.id,
+          type: 'CREATED',
+        },
+      });
+
       for (const p of produtos) {
         const pedidoProduto = await this.prisma.pedidoProduto.create({
           data: {
-            status: 'PRONTO',
+            status: 'AGUARDANDO',
             pedidoId: create.id,
             produtoId: p.produtoId,
             obs: p.obs,

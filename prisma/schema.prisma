@@ -298,7 +298,7 @@ model Mesa {
   updatedAt      DateTime        @updatedAt
   pedidos        Pedidos[]
   PedidoProduto  PedidoProduto[]
-
+  HistoryPedido  HistoryPedido[]
   @@unique([numero, restaurantCnpj])
 }
 
@@ -370,6 +370,7 @@ model Pedidos {
   tipoPedido         TipoPedido?     @default(COUNTER)
   produtos           PedidoProduto[]
   Payments           Payments[]
+  HistoryPedido      HistoryPedido[]
   idPdv              String?
   delete             Boolean         @default(false)
   restaurantCnpj     String
@@ -414,6 +415,24 @@ model PedidoProduto {
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
   adicionais   PedidoProdutoAdicional[]
+}
+
+enum TipoHistoryPedido {
+  CREATED
+  UPDATED
+  DELIVERED
+  CANCELADO
+}
+
+model HistoryPedido {
+  id             String     @id @default(uuid())
+  pedidoId       String
+  mesaId        String?
+  mesa          Mesa?       @relation(fields: [mesaId], references: [id])
+  type           TipoHistoryPedido  @default(CREATED)
+  pedido         Pedidos    @relation(fields: [pedidoId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model PedidoProdutoAdicional {
