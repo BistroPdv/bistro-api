@@ -35,7 +35,7 @@ export class UsersService {
     const total = await this.prisma.user.count({ where });
 
     const users = await this.prisma.user.findMany({
-      where,
+      where: { ...where, role: { not: 'SYSADMIN' } },
       skip,
       select: this.select,
       take: take ?? total,
@@ -49,19 +49,28 @@ export class UsersService {
 
   async findOne(id: string, cnpj: string) {
     return this.prisma.user.findUnique({
-      where: { id, delete: false, restaurant: { cnpj } },
+      where: {
+        id,
+        delete: false,
+        restaurant: { cnpj },
+        role: { not: 'SYSADMIN' },
+      },
       select: this.select,
     });
   }
 
   async findByUsername(username: string, cnpj: string) {
     return this.prisma.user.findFirst({
-      where: { username, restaurant: { cnpj } },
+      where: { username, restaurant: { cnpj }, role: { not: 'SYSADMIN' } },
     });
   }
 
   async create(data: Prisma.UserCreateInput) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
+    if (!['OWNER', 'MANAGER', 'USER'].includes(data.role as string)) {
+      //exception role invalid
+      throw new HttpException('Role inválida', HttpStatus.BAD_REQUEST);
+    }
     return this.prisma.user.create({
       select: this.select,
       data: {

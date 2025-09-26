@@ -58,12 +58,14 @@ export class RestaurantsService {
   }
 
   async create(data: Prisma.RestaurantCreateInput) {
-    return this.prisma.restaurant.create({
+    const create = this.prisma.restaurant.create({
       select: this.select,
       data: {
         ...data,
       },
     });
+
+    return create;
   }
 
   async update(data: Prisma.RestaurantUpdateInput, cnpj: string) {

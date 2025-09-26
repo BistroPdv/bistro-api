@@ -1,26 +1,48 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 export class CreateRestaurantDto {
-  @ApiProperty({ example: 'joao', description: 'Nome do usuário' })
+  @ApiProperty({
+    example: '12345678000123',
+    description: 'CNPJ do restaurante',
+  })
   @IsNotEmpty()
-  username: string;
+  @IsString()
+  @Matches(/^\d{14}$/, { message: 'CNPJ deve conter exatamente 14 dígitos' })
+  cnpj: string;
 
-  @ApiProperty({ example: '123456', description: 'Senha do usuário' })
+  @ApiProperty({
+    example: 'Restaurante Delícias',
+    description: 'Nome do restaurante',
+  })
   @IsNotEmpty()
-  @MinLength(6)
-  password: string;
+  @IsString()
+  name: string;
 
-  @ApiProperty({ example: 'João', description: 'Nome completo do usuário' })
+  @ApiProperty({
+    example: '(11) 99999-9999',
+    description: 'Telefone do restaurante',
+  })
   @IsNotEmpty()
-  nome: string;
+  @IsString()
+  phone: string;
 
-  @ApiProperty({ example: 'joao@teste.com', description: 'Email do usuário' })
+  @ApiProperty({
+    example: 'contato@restaurante.com',
+    description: 'Email do restaurante',
+  })
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'USER', description: 'Role do usuário' })
+  @ApiProperty({ example: true, description: 'Se o restaurante emite NFE' })
+  @IsBoolean()
   @IsNotEmpty()
-  role: Role;
+  nfe: boolean;
 }

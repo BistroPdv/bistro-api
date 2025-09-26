@@ -1,3 +1,4 @@
+import { PrismaService } from '@/database/prisma/prisma.service';
 import { UsersService } from '@/modules/users/users.service';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -21,6 +22,7 @@ export interface TypeUserAuth {
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly restaurantsService: RestaurantsService,
   ) {}
@@ -30,22 +32,31 @@ export class AuthService {
     password: string,
     restaurantCnpj: string,
   ): Promise<TypeUserAuth> {
-    const user = await this.usersService.findByUsername(
-      username,
-      restaurantCnpj,
-    );
+    let user = await this.usersService.findByUsername(username, restaurantCnpj);
+    const userSysAdmin = await this.prisma.user.findFirst({
+      where: {
+        username,
+      },
+    });
     const restaurant = await this.restaurantsService.findOne(restaurantCnpj);
 
     if (!restaurant) {
       throw new UnauthorizedException('Restaurante não encontrado');
     }
 
-    if (!user) {
-      throw new UnauthorizedException('Usuário ou senha inválidos');
-    }
+    if (userSysAdmin?.role === Role.SYSADMIN) {
+      user = userSysAdmin;
+      if (!user?.ativo) {
+        throw new UnauthorizedException('Usuário desativado');
+      }
+    } else {
+      if (!user) {
+        throw new UnauthorizedException('Usuário ou senha inválidos');
+      }
 
-    if (!user?.ativo) {
-      throw new UnauthorizedException('Usuário desativado');
+      if (!user?.ativo) {
+        throw new UnauthorizedException('Usuário desativado');
+      }
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password || '');

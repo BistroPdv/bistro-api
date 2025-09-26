@@ -1,32 +1,36 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class UpdateRestaurantDto {
-  @ApiPropertyOptional({ example: 'joao', description: 'Nome do usuário' })
-  @IsNotEmpty()
-  username: string;
+  @ApiPropertyOptional({
+    example: 'Restaurante Delícias Atualizado',
+    description: 'Nome do restaurante',
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
 
   @ApiPropertyOptional({
-    example: 'João',
-    description: 'Nome completo do usuário',
+    example: '(11) 88888-8888',
+    description: 'Telefone do restaurante',
   })
-  @IsNotEmpty()
-  nome: string;
-
-  @ApiPropertyOptional({ example: '123456', description: 'Senha do usuário' })
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @ApiPropertyOptional({
-    example: 'joao@teste.com',
-    description: 'Email do usuário',
+    example: 'contato-atualizado@restaurante.com',
+    description: 'Email do restaurante',
   })
+  @IsOptional()
   @IsEmail()
-  email: string;
+  email?: string;
 
-  @ApiPropertyOptional({ example: 'USER', description: 'Role do usuário' })
-  @IsNotEmpty()
-  role: Role;
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Se o restaurante emite NFE',
+  })
+  @IsOptional()
+  @IsBoolean()
+  nfe?: boolean;
 }
