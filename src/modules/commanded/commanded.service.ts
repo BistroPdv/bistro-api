@@ -134,8 +134,15 @@ export class CommandedService {
     );
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} commanded`;
+  findOne(id: string, cnpj: string) {
+    const commanded = this.prisma.comanda.findFirst({
+      where: {
+        OR: [{ id: id.toString() }, { numero: Number(id) }],
+        restaurant: { cnpj },
+      },
+      select: this.commandedSelect,
+    });
+    return commanded;
   }
 
   update(id: number, updateCommandedDto: UpdateCommandedDto) {

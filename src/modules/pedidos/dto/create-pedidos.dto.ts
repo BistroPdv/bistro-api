@@ -270,6 +270,52 @@ export class CreatePedidosDto {
   motivoCancelamento?: string;
 
   @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440006',
+    description: 'ID da comanda associada (quando houver)',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(PEDIDOS_VALIDATION_CONFIG.UUID_VERSION, {
+    message: 'ID da comanda deve ser um UUID válido',
+  })
+  comandaId?: string;
+
+  @ApiProperty({
+    example: 'PDV_ID_123456',
+    description: `ID do PDV externo (opcional, máximo ${PEDIDOS_LIMITS.MAX_LENGTH_PDV_CODIGO} caracteres)`,
+    required: false,
+    maxLength: PEDIDOS_LIMITS.MAX_LENGTH_PDV_CODIGO,
+  })
+  @IsOptional()
+  @IsString({ message: 'ID do PDV deve ser uma string' })
+  @Max(PEDIDOS_LIMITS.MAX_LENGTH_PDV_CODIGO, {
+    message: `ID do PDV deve ter no máximo ${PEDIDOS_LIMITS.MAX_LENGTH_PDV_CODIGO} caracteres`,
+  })
+  idPdv?: string;
+
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440007',
+    description: 'ID do usuário responsável pelo pedido (opcional)',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(PEDIDOS_VALIDATION_CONFIG.UUID_VERSION, {
+    message: 'ID do usuário deve ser um UUID válido',
+  })
+  userId?: string;
+
+  @ApiProperty({
+    example: '550e8400-e29b-41d4-a716-446655440008',
+    description: 'ID do caixa associado (opcional)',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID(PEDIDOS_VALIDATION_CONFIG.UUID_VERSION, {
+    message: 'ID do caixa deve ser um UUID válido',
+  })
+  caixaId?: string;
+
+  @ApiProperty({
     type: [ProdutoPedidoDto],
     description: `Lista de produtos do pedido com suas quantidades e adicionais (obrigatório, máximo ${PEDIDOS_LIMITS.MAX_PRODUTOS_POR_PEDIDO} produtos)`,
     required: true,

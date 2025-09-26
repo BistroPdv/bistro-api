@@ -1,5 +1,6 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-resp.dto';
 import {
   ApiOmieService,
   ItemsCreate,
@@ -27,6 +28,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
+  ApiResponseProperty,
   ApiTags,
 } from '@nestjs/swagger';
 import { Prisma } from '@prisma/client';
@@ -37,13 +39,20 @@ import {
   EXEMPLOS_ERRO_VALIDACAO,
   EXEMPLOS_ERRO_VALIDACAO_UPDATE,
   EXEMPLOS_RESPOSTA,
-  EXEMPLOS_RESPOSTA_GET_ALL,
   EXEMPLOS_RESPOSTA_GET_BY_MESA,
-  EXEMPLOS_RESPOSTA_GET_ONE,
   StatusPedido,
   UpdatePedidosDto,
 } from './dto';
+import { Pedido } from './entities';
 import { PedidoProdutoComAdicionais, PedidosService } from './pedidos.service';
+
+// Classe específica para documentação do Swagger
+class PaginationPedidosResponse extends PaginationResponseDto<Pedido> {
+  @ApiResponseProperty({
+    type: [Pedido],
+  })
+  declare data: Pedido[];
+}
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -84,16 +93,7 @@ export class PedidosController {
   @ApiResponse({
     status: 200,
     description: 'Lista de pedidos retornada com sucesso',
-    schema: {
-      example: EXEMPLOS_RESPOSTA_GET_ALL.PEDIDOS_PAGINADOS,
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista vazia quando não há pedidos',
-    schema: {
-      example: EXEMPLOS_RESPOSTA_GET_ALL.PEDIDOS_VAZIOS,
-    },
+    type: PaginationPedidosResponse,
   })
   @ApiResponse({
     status: 401,
@@ -134,16 +134,7 @@ export class PedidosController {
   @ApiResponse({
     status: 200,
     description: 'Pedido encontrado com sucesso',
-    schema: {
-      example: EXEMPLOS_RESPOSTA_GET_ONE.PEDIDO_ENCONTRADO,
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Pedido cancelado encontrado',
-    schema: {
-      example: EXEMPLOS_RESPOSTA_GET_ONE.PEDIDO_CANCELADO,
-    },
+    type: Pedido,
   })
   @ApiResponse({
     status: 404,
