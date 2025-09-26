@@ -13,7 +13,7 @@ interface JWTPayload {
   username: string;
   restaurantCnpj: string;
   appToken?: string;
-  role: 'SYSADMIN' | 'OWNER' | 'MANAGER' | 'USER';
+  role: 'SYSADMIN' | 'OWNER' | 'MANAGER' | 'USER' | 'WAITER';
 }
 
 declare module 'fastify' {

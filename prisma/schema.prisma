@@ -12,6 +12,7 @@ enum Role {
   OWNER
   MANAGER
   USER
+  WAITER
 }
 
 enum Integrations {

@@ -67,7 +67,7 @@ export class UsersService {
 
   async create(data: Prisma.UserCreateInput) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    if (!['OWNER', 'MANAGER', 'USER'].includes(data.role as string)) {
+    if (!['OWNER', 'MANAGER', 'USER', 'WAITER'].includes(data.role as string)) {
       //exception role invalid
       throw new HttpException('Role inválida', HttpStatus.BAD_REQUEST);
     }
@@ -82,6 +82,10 @@ export class UsersService {
 
   async update(data: Prisma.UserUpdateInput, id: string) {
     const hashedPassword = await bcrypt.hash(data.password as string, 10);
+    if (!['OWNER', 'MANAGER', 'USER', 'WAITER'].includes(data.role as string)) {
+      //exception role invalid
+      throw new HttpException('Role inválida', HttpStatus.BAD_REQUEST);
+    }
     return this.prisma.user.update({
       where: { id },
       select: this.select,
