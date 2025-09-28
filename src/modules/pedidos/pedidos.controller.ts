@@ -224,6 +224,7 @@ export class PedidosController {
     @Param('id') id: string,
     @Query() query: PaginationQueryDto,
     @Query('status') status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+    @Query('comandaId') comandaId: string,
     @Query('prodImage') prodImage: string,
     @Req() req: FastifyRequest,
   ) {
@@ -234,6 +235,7 @@ export class PedidosController {
       query,
       status,
       isProdImage,
+      comandaId,
     );
   }
 
@@ -453,6 +455,16 @@ export class PedidosController {
         throw new HttpException('CNPJ não encontrado', HttpStatus.BAD_REQUEST);
       }
 
+      // Buscar o pedido existente para obter o pdvCodPedido
+      const existingPedido = await this.prisma.pedidos.findUnique({
+        where: { id, restaurantCnpj: req.user.restaurantCnpj },
+        select: { id: true, pdvCodPedido: true },
+      });
+
+      if (!existingPedido) {
+        throw new HttpException('Pedido não encontrado', HttpStatus.NOT_FOUND);
+      }
+
       // Converter o DTO para o formato esperado pelo service
       const updateData = {
         status: req.body.status,
@@ -460,7 +472,87 @@ export class PedidosController {
         motivoCancelamento: req.body.motivoCancelamento,
       };
 
-      return this.pedidosService.update(updateData, id);
+      // Extrair produtos se existirem
+      const produtos = req.body.produtos as PedidoProdutoComAdicionais[];
+
+      // Atualizar o pedido
+      const result = await this.pedidosService.update(
+        updateData,
+        produtos || [],
+        id,
+        req.user.restaurantCnpj,
+      );
+
+      // Se há produtos e o pedido tem pdvCodPedido, atualizar no Omie
+      if (produtos && produtos.length > 0 && existingPedido.pdvCodPedido) {
+        const restaurant = await this.prisma.restaurant.findUnique({
+          where: { cnpj: req.user.restaurantCnpj },
+          select: {
+            integrationOmie: true,
+            pdvIntegrations: true,
+          },
+        });
+
+        if (
+          restaurant?.pdvIntegrations === 'OMIE' &&
+          restaurant?.integrationOmie?.omie_key &&
+          restaurant?.integrationOmie?.omie_secret
+        ) {
+          let tempProd: ItemsCreate[] = [];
+          
+          for (let i = 0; i < produtos.length; i++) {
+            const prod = produtos[i];
+            const value = await this.prisma.produto.findUnique({
+              where: { id: prod.produtoId },
+            });
+            
+            tempProd.push({
+              codigo_produto: Number(prod.externoId),
+              quantidade: prod.quantidade,
+              valor_unitario: value?.preco,
+              cfop: '5102',
+            });
+
+            // Adicionar adicionais válidos ao pedido
+            if (prod.adicionais && Array.isArray(prod.adicionais)) {
+              for (const adicional of prod.adicionais) {
+                if (adicional.codIntegra && adicional.price > 0) {
+                  tempProd.push({
+                    codigo_produto: Number(adicional.codIntegra),
+                    quantidade: adicional.quantidade,
+                    valor_unitario: adicional.price,
+                    cfop: '5102',
+                  });
+                }
+              }
+            }
+          }
+
+          try {
+            const resp = await this.apiOmieService.gerarPedido({
+              call: 'IncluirItemPedido',
+              param: tempProd,
+              app_key: restaurant.integrationOmie.omie_key,
+              app_secret: restaurant.integrationOmie.omie_secret,
+            });
+
+            // Atualizar o pdvCodPedido se necessário
+            if (resp.data.codigo_pedido) {
+              await this.prisma.pedidos.update({
+                where: { id },
+                data: {
+                  pdvCodPedido: String(resp.data.codigo_pedido),
+                },
+              });
+            }
+          } catch (omieError) {
+            console.error('Erro ao atualizar pedido no Omie:', omieError);
+            // Não falhar a operação se houver erro no Omie
+          }
+        }
+      }
+
+      return result;
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

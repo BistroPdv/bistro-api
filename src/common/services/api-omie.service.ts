@@ -92,4 +92,27 @@ export class ApiOmieService {
 
     return resp;
   }
+
+  async gerarPedido({
+    call,
+    param,
+    app_key,
+    app_secret,
+  }: {
+    call: string;
+    param: ItemsCreate[];
+    app_key: string;
+    app_secret: string;
+  }) {
+    const dados = {
+      call,
+      param,
+      app_key,
+      app_secret,
+    };
+
+    const resp = await this.api.post(`/produtos/pedidovenda/`, dados);
+
+    return resp;
+  }
 }

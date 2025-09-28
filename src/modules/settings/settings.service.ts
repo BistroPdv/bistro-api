@@ -56,7 +56,35 @@ export class SettingsService {
       throw new NotFoundException('Configurações não encontradas');
     }
 
-    return settings;
+    const printerBill = await this.prisma.impressora.findFirst({
+      where: {
+        id: settings.printerBill ?? '',
+        restaurantCnpj: cnpj,
+      },
+      select: {
+        nome: true,
+        ip: true,
+        porta: true,
+      },
+    });
+    
+    const printerNotification = await this.prisma.impressora.findFirst({
+      where: {
+        id: settings.printerNotification ?? '',
+        restaurantCnpj: cnpj,
+      },
+      select: {
+        nome: true,
+        ip: true,
+        porta: true,
+      },
+    });
+
+    return {
+      ...settings,
+      printerBill: printerBill,
+      printerNotification: printerNotification,
+    };
   }
 
   async updateSettings(props: Props) {
