@@ -10,7 +10,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { AppModule } from './app.module';
 import { JwtInterceptor } from './auth/jwt.interceptor';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { ErrorResponseInterceptor } from './common/interceptors/error-response.interceptor';
 import Default from './config/configuration';
 import { PrismaService } from './database/prisma/prisma.service';
 
@@ -28,13 +29,75 @@ async function bootstrap() {
     allowedHeaders: '*',
   });
 
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  // Configuração de validação global
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
 
+  // Configuração do Swagger
   const config = new DocumentBuilder()
     .setTitle('Bistro API')
-    .setDescription('Documentação da API do Bistro')
+    .setDescription(
+      `
+      Documentação da API do Bistro
+      
+      ## Tratamento de Erros
+      
+      Esta API utiliza um sistema padronizado de tratamento de erros que retorna respostas consistentes em todos os endpoints.
+      
+      ### Formato de Resposta de Erro
+      
+      Todas as respostas de erro seguem o seguinte formato:
+      
+      \`\`\`json
+      {
+        "statusCode": 400,
+        "message": "Mensagem de erro principal",
+        "errorCode": "VALIDATION_ERROR",
+        "details": ["Detalhes adicionais do erro"],
+        "timestamp": "2024-01-15T10:30:00.000Z",
+        "path": "/api/endpoint",
+        "method": "POST",
+        "errorId": "err_1705312200000_abc123def"
+      }
+      \`\`\`
+      
+      ### Códigos de Erro Disponíveis
+      
+      - **VALIDATION_ERROR**: Erro de validação (400)
+      - **UNAUTHORIZED**: Não autorizado (401)
+      - **FORBIDDEN**: Acesso negado (403)
+      - **NOT_FOUND**: Recurso não encontrado (404)
+      - **ALREADY_EXISTS**: Recurso já existe (409)
+      - **INTERNAL_ERROR**: Erro interno (500)
+      - **EXTERNAL_SERVICE_ERROR**: Erro em serviço externo (502)
+      
+      ### Rastreamento de Erros
+      
+      Cada erro inclui um \`errorId\` único que pode ser usado para rastreamento e debugging. 
+      Use este ID ao reportar problemas para a equipe de desenvolvimento.
+    `,
+    )
     .setVersion('1.0')
     .addBearerAuth()
+    .addTag('Auth', 'Endpoints de autenticação')
+    .addTag('Categories', 'Gerenciamento de categorias')
+    .addTag('Products', 'Gerenciamento de produtos')
+    .addTag('Pedidos', 'Gerenciamento de pedidos')
+    .addTag('Tables', 'Gerenciamento de mesas')
+    .addTag('Payments', 'Gerenciamento de pagamentos')
+    .addTag('Users', 'Gerenciamento de usuários')
+    .addTag('Restaurants', 'Gerenciamento de restaurantes')
+    .addTag('Settings', 'Configurações do sistema')
+    .addTag('Dashboard', 'Dashboard e relatórios')
+    .addTag('Integrations', 'Integrações externas')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -52,11 +115,16 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new PrismaExceptionFilter());
+  // Configuração global de tratamento de erros
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
+  // Configuração de interceptors
   const jwtService = app.get(JwtService);
   const prismaService = app.get(PrismaService);
-  app.useGlobalInterceptors(new JwtInterceptor(jwtService, prismaService));
+  app.useGlobalInterceptors(
+    new JwtInterceptor(jwtService, prismaService),
+    new ErrorResponseInterceptor(),
+  );
 
   app.register(multipart as any, {
     attachFieldsToBody: true,

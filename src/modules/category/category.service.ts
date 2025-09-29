@@ -129,8 +129,6 @@ export class CategoryService {
       }
     }
 
-    console.log(query);
-
     const where = buildWhere<Prisma.CategoriaWhereInput>(search, cnpj);
 
     const total = await this.prisma.categoria.count({
@@ -165,22 +163,43 @@ export class CategoryService {
     });
   }
 
-  async create(data: Prisma.CategoriaCreateInput) {
+  async create(data: Prisma.CategoriaCreateInput, cnpj: string) {
     delete data.id;
+    const isName = await this.prisma.categoria.findFirst({
+      where: {
+        nome: { equals: data.nome, mode: 'insensitive' },
+        restaurantCnpj: cnpj,
+      },
+    });
+    if (isName) {
+      throw new HttpException('Nome já existe', HttpStatus.BAD_REQUEST);
+    }
     return this.prisma.categoria.create({
       select: this.select,
       data: {
         ...data,
+        restaurant: { connect: { cnpj } },
       },
     });
   }
 
-  async update(data: Prisma.CategoriaUpdateInput, id: string) {
+  async update(data: Prisma.CategoriaUpdateInput, id: string, cnpj: string) {
+    const isName = await this.prisma.categoria.findFirst({
+      where: {
+        nome: { equals: data.nome as string, mode: 'insensitive' },
+        restaurantCnpj: cnpj,
+      },
+    });
+    if (isName) {
+      throw new HttpException('Nome já existe', HttpStatus.BAD_REQUEST);
+    }
+
     return this.prisma.categoria.update({
       where: { id },
       select: this.select,
       data: {
         ...data,
+        restaurant: { connect: { cnpj } },
       },
     });
   }

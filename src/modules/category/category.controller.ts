@@ -1,5 +1,14 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import {
+  ApiCreateErrorResponses,
+  ApiDeleteErrorResponses,
+  ApiFindByIdErrorResponses,
+  ApiListErrorResponses,
+  ApiUpdateErrorResponses,
+  ApiUpdateOrderErrorResponses,
+} from '@/common/decorators/api-error-responses.decorator';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { PaginationResponseDto } from '@/common/dto/pagination-resp.dto';
 import { WebsocketGateway } from '@/websocket/websocket.gateway';
 import {
   Controller,
@@ -16,15 +25,32 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiProperty,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AdicionalHeader, AdicionalOptions, Prisma } from '@prisma/client';
 import { FastifyRequest } from 'fastify';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Category } from './entities/category.entity';
 
 interface AdcOptions extends AdicionalHeader {
   opcoes?: AdicionalOptions[];
+}
+
+// Classe específica para documentação do Swagger
+class PaginationCategoryResponse extends PaginationResponseDto<Category> {
+  @ApiProperty({
+    type: [Category],
+    description: 'Lista de categorias',
+  })
+  declare data: Category[];
 }
 
 @UseGuards(JwtAuthGuard)
@@ -37,8 +63,22 @@ export class CategoryController {
     private readonly websocketGateway: WebsocketGateway,
   ) {}
 
-  //TODO: Implementar o findAll
   @Get()
+  @ApiOperation({
+    summary: 'Listar todas as categorias',
+    description:
+      'Retorna uma lista paginada de todas as categorias do restaurante autenticado',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de categorias retornada com sucesso',
+    type: PaginationCategoryResponse,
+  })
+  @ApiListErrorResponses({
+    resourceName: 'Categoria',
+    resourceNamePlural: 'Categorias',
+    basePath: '/categorias',
+  })
   async findAll(
     @Query() query: PaginationQueryDto,
     @Req() req: FastifyRequest,
@@ -69,20 +109,46 @@ export class CategoryController {
     });
   }
 
-  //TODO: Implementar o findOne
   @Get(':id')
+  @ApiOperation({
+    summary: 'Buscar categoria por ID',
+    description: 'Retorna uma categoria específica pelo seu ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categoria encontrada com sucesso',
+    type: Category,
+  })
+  @ApiFindByIdErrorResponses({
+    resourceName: 'Categoria',
+    resourceNamePlural: 'Categorias',
+    basePath: '/categorias',
+  })
   async findOne(
     @Param('id') id: string,
     @Req() req: FastifyRequest<{ Params: { id: string } }>,
   ) {
     return this.categoryService.findOne(id, req.user.restaurantCnpj);
   }
-  //TODO: Implementar o create
+  @Post()
+  @ApiOperation({
+    summary: 'Criar nova categoria',
+    description: 'Cria uma nova categoria para o restaurante autenticado',
+  })
   @ApiBody({
     description: 'Criação de categoria',
     type: CreateCategoryDto,
   })
-  @Post()
+  @ApiResponse({
+    status: 201,
+    description: 'Categoria criada com sucesso',
+    type: Category,
+  })
+  @ApiCreateErrorResponses({
+    resourceName: 'Categoria',
+    resourceNamePlural: 'Categorias',
+    basePath: '/categorias',
+  })
   async create(
     @Req() req: FastifyRequest<{ Body: Prisma.CategoriaCreateInput }>,
   ) {
@@ -91,29 +157,33 @@ export class CategoryController {
         const adicionais = req.body.adicionais as AdcOptions[];
         delete req.body.adicionais;
 
-        const result = await this.categoryService.create({
-          ...req.body,
-          restaurant: { connect: { cnpj: req.user.restaurantCnpj } },
-          adicionais: {
-            create: adicionais.map((a) => {
-              const op = a.opcoes;
-              delete a.opcoes;
-              return {
-                titulo: a.titulo,
-                qtdMinima: a.qtdMinima,
-                qtdMaxima: a.qtdMaxima,
-                obrigatorio: a.obrigatorio,
-                opcoes: {
-                  create: op?.map((o) => ({
-                    nome: o.nome,
-                    preco: Number(o.preco),
-                    codIntegra: o.codIntegra,
-                  })),
-                },
-              };
-            }),
+        const result = await this.categoryService.create(
+          {
+            ...req.body,
+            adicionais: {
+              create: adicionais
+                ? adicionais.map((a) => {
+                    const op = a.opcoes;
+                    delete a.opcoes;
+                    return {
+                      titulo: a.titulo,
+                      qtdMinima: a.qtdMinima,
+                      qtdMaxima: a.qtdMaxima,
+                      obrigatorio: a.obrigatorio,
+                      opcoes: {
+                        create: op?.map((o) => ({
+                          nome: o.nome,
+                          preco: Number(o.preco),
+                          codIntegra: o.codIntegra,
+                        })),
+                      },
+                    };
+                  })
+                : [],
+            },
           },
-        });
+          req.user.restaurantCnpj,
+        );
 
         if (result) {
           this.websocketGateway.server.emit(
@@ -126,17 +196,32 @@ export class CategoryController {
 
       throw new Error('Dados da categoria inválidos');
     } catch (error) {
-      console.error(error);
-      throw new Error('Erro interno');
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException('Erro interno', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  //TODO: Implementar o update
+  @Put(':id')
+  @ApiOperation({
+    summary: 'Atualizar categoria',
+    description: 'Atualiza uma categoria existente pelo seu ID',
+  })
   @ApiBody({
     description: 'Atualização de categoria',
     type: UpdateCategoryDto,
   })
-  @Put(':id')
+  @ApiResponse({
+    status: 200,
+    description: 'Categoria atualizada com sucesso',
+    type: Category,
+  })
+  @ApiUpdateErrorResponses({
+    resourceName: 'Categoria',
+    resourceNamePlural: 'Categorias',
+    basePath: '/categorias',
+  })
   async update(
     @Req()
     req: FastifyRequest<{
@@ -212,6 +297,7 @@ export class CategoryController {
           },
         },
         id,
+        restaurantCnpj,
       );
 
       if (result) {
@@ -228,14 +314,26 @@ export class CategoryController {
     }
   }
 
-  //TODO: Implementar o updateOrder
+  @Put('ordem')
+  @ApiOperation({
+    summary: 'Atualizar ordem das categorias',
+    description: 'Atualiza a ordem de exibição das categorias',
+  })
   @ApiBody({
     description: 'Alterar Ordem de Exibição de uma categoria',
     schema: {
       example: [{ id: 'string', ordem: 'number' }],
     },
   })
-  @Put('ordem')
+  @ApiResponse({
+    status: 200,
+    description: 'Ordem das categorias atualizada com sucesso',
+  })
+  @ApiUpdateOrderErrorResponses({
+    resourceName: 'Categoria',
+    resourceNamePlural: 'Categorias',
+    basePath: '/categorias',
+  })
   async updateOrder(
     @Req() req: FastifyRequest<{ Body: { id: string; ordem: number }[] }>,
   ) {
@@ -258,8 +356,20 @@ export class CategoryController {
     }
   }
 
-  //TODO: Implementar o delete
   @Delete(':id')
+  @ApiOperation({
+    summary: 'Deletar categoria',
+    description: 'Remove uma categoria do sistema',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categoria deletada com sucesso',
+  })
+  @ApiDeleteErrorResponses({
+    resourceName: 'Categoria',
+    resourceNamePlural: 'Categorias',
+    basePath: '/categorias',
+  })
   async delete(@Param('id') id: string) {
     return this.categoryService.delete(id);
   }
