@@ -89,15 +89,15 @@ async function bootstrap() {
     .addBearerAuth()
     .addTag('Auth', 'Endpoints de autenticação')
     .addTag('Categories', 'Gerenciamento de categorias')
-    .addTag('Products', 'Gerenciamento de produtos')
-    .addTag('Pedidos', 'Gerenciamento de pedidos')
-    .addTag('Tables', 'Gerenciamento de mesas')
-    .addTag('Payments', 'Gerenciamento de pagamentos')
-    .addTag('Users', 'Gerenciamento de usuários')
-    .addTag('Restaurants', 'Gerenciamento de restaurantes')
-    .addTag('Settings', 'Configurações do sistema')
     .addTag('Dashboard', 'Dashboard e relatórios')
     .addTag('Integrations', 'Integrações externas')
+    .addTag('Payments', 'Gerenciamento de pagamentos')
+    .addTag('Pedidos', 'Gerenciamento de pedidos')
+    .addTag('Products', 'Gerenciamento de produtos')
+    .addTag('Restaurants', 'Gerenciamento de restaurantes')
+    .addTag('Settings', 'Configurações do sistema')
+    .addTag('Tables', 'Gerenciamento de mesas')
+    .addTag('Users', 'Gerenciamento de usuários')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -105,7 +105,7 @@ async function bootstrap() {
   app.use(
     '/docs',
     apiReference({
-      url: 'http://10.10.1.162:4000/docs',
+      url: `${process.env.API_URL}/docs`,
       content: document,
       title: 'Bistro API',
       withFastify: true,
