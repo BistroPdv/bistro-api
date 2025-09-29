@@ -9,6 +9,7 @@ export {
   StatusPedido,
   StatusProduto,
 } from './create-pedidos.dto';
+export { FindByMesaQueryDto } from './find-by-mesa-query.dto';
 export {
   UpdateAdicionalDto,
   UpdatePedidosDto,
@@ -79,10 +80,10 @@ export {
   EXEMPLOS_RESPOSTA_GET_ALL,
   EXEMPLOS_RESPOSTA_GET_BY_MESA,
   EXEMPLOS_RESPOSTA_GET_ONE,
-  gerarExemploPedido,
-  gerarExemploUpdatePedido,
   PEDIDO_EXEMPLOS,
   UPDATE_PEDIDO_EXEMPLOS,
+  gerarExemploPedido,
+  gerarExemploUpdatePedido,
   validarExemploPedido,
   validarExemploUpdatePedido,
 } from './pedidos.examples';

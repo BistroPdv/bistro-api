@@ -40,9 +40,9 @@ import {
   EXEMPLOS_ERRO_VALIDACAO_UPDATE,
   EXEMPLOS_RESPOSTA,
   EXEMPLOS_RESPOSTA_GET_BY_MESA,
-  StatusPedido,
   UpdatePedidosDto,
 } from './dto';
+import { FindByMesaQueryDto } from './dto/find-by-mesa-query.dto';
 import { Pedido } from './entities';
 import { PedidoProdutoComAdicionais, PedidosService } from './pedidos.service';
 
@@ -131,6 +131,12 @@ export class PedidosController {
     description: 'ID único do pedido',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
+  @ApiQuery({
+    name: 'prodImage',
+    description: 'Mostrar imagem do produto',
+    required: false,
+    example: 'true',
+  })
   @ApiResponse({
     status: 200,
     description: 'Pedido encontrado com sucesso',
@@ -151,8 +157,17 @@ export class PedidosController {
     status: 401,
     description: 'Não autorizado - Token JWT inválido ou ausente',
   })
-  async findOne(@Param('id') id: string, @Req() req: FastifyRequest) {
-    return this.pedidosService.findOne(id, req.user.restaurantCnpj);
+  async findOne(
+    @Param('id') id: string,
+    @Query('prodImage') prodImage: string,
+    @Req() req: FastifyRequest,
+  ) {
+    const isProdImage = prodImage === 'true';
+    return this.pedidosService.findOne(
+      id,
+      req.user.restaurantCnpj,
+      isProdImage,
+    );
   }
 
   @Get('mesa/:id')
@@ -165,24 +180,6 @@ export class PedidosController {
     name: 'id',
     description: 'ID da mesa',
     example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  @ApiQuery({
-    name: 'status',
-    description: 'Filtrar pedidos por status',
-    enum: StatusPedido,
-    required: false,
-  })
-  @ApiQuery({
-    name: 'page',
-    description: 'Número da página',
-    required: false,
-    example: 1,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: 'Quantidade de itens por página',
-    required: false,
-    example: 10,
   })
   @ApiResponse({
     status: 200,
@@ -222,18 +219,17 @@ export class PedidosController {
   })
   async findByMesa(
     @Param('id') id: string,
-    @Query() query: PaginationQueryDto,
-    @Query('status') status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
-    @Query('comandaId') comandaId: string,
-    @Query('prodImage') prodImage: string,
+    @Query() query: FindByMesaQueryDto,
     @Req() req: FastifyRequest,
   ) {
+    const { status, comandaId, prodImage, ...paginationQuery } = query;
     const isProdImage = prodImage === 'true';
+
     return this.pedidosService.findByMesa(
       id,
       req.user.restaurantCnpj,
-      query,
-      status,
+      paginationQuery,
+      status as 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
       isProdImage,
       comandaId,
     );
@@ -499,13 +495,13 @@ export class PedidosController {
           restaurant?.integrationOmie?.omie_secret
         ) {
           let tempProd: ItemsCreate[] = [];
-          
+
           for (let i = 0; i < produtos.length; i++) {
             const prod = produtos[i];
             const value = await this.prisma.produto.findUnique({
               where: { id: prod.produtoId },
             });
-            
+
             tempProd.push({
               codigo_produto: Number(prod.externoId),
               quantidade: prod.quantidade,

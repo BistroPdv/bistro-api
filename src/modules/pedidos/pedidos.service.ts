@@ -123,10 +123,10 @@ export class PedidosService {
     );
   }
 
-  async findOne(id: string, cnpj: string) {
+  async findOne(id: string, cnpj: string, prodImage?: boolean) {
     return this.prisma.pedidos.findUnique({
       where: { id, delete: false, restaurant: { cnpj } },
-      select: this.select(),
+      select: this.select(prodImage ?? false),
     });
   }
 
@@ -153,17 +153,19 @@ export class PedidosService {
       throw new NotFoundException('Mesa não encontrada');
     }
 
-    const where: Prisma.PedidosWhereInput = comandaId ? {
-      delete: false,
-      comandaId,
-      restaurantCnpj: cnpj,
-      ...(status ? { status } : {}),
-    }: {
-      delete: false,
-      mesaId: id,
-      restaurantCnpj: cnpj,
-      ...(status ? { status } : {}),
-    };
+    const where: Prisma.PedidosWhereInput = comandaId
+      ? {
+          delete: false,
+          comandaId,
+          restaurantCnpj: cnpj,
+          ...(status ? { status } : {}),
+        }
+      : {
+          delete: false,
+          mesaId: id,
+          restaurantCnpj: cnpj,
+          ...(status ? { status } : {}),
+        };
 
     const [data, total] = await Promise.all([
       this.prisma.pedidos.findMany({
