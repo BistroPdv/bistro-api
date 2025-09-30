@@ -184,16 +184,6 @@ export class CategoryService {
   }
 
   async update(data: Prisma.CategoriaUpdateInput, id: string, cnpj: string) {
-    const isName = await this.prisma.categoria.findFirst({
-      where: {
-        nome: { equals: data.nome as string, mode: 'insensitive' },
-        restaurantCnpj: cnpj,
-      },
-    });
-    if (isName) {
-      throw new HttpException('Nome já existe', HttpStatus.BAD_REQUEST);
-    }
-
     return this.prisma.categoria.update({
       where: { id },
       select: this.select,
