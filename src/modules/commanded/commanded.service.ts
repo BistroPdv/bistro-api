@@ -135,9 +135,10 @@ export class CommandedService {
   }
 
   findOne(id: string, cnpj: string) {
+    const numero = isNaN(Number(id)) ? 0 : Number(id);
     const commanded = this.prisma.comanda.findFirst({
       where: {
-        OR: [{ id: id.toString() }, { numero: Number(id) }],
+        OR: [{ id: id.toString() }, { numero: numero }],
         restaurant: { cnpj },
       },
       select: this.commandedSelect,
