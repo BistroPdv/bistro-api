@@ -184,6 +184,14 @@ export class CategoryService {
   }
 
   async update(data: Prisma.CategoriaUpdateInput, id: string, cnpj: string) {
+    //@ts-ignore
+    if (data.impressoraId) {
+      //@ts-ignore
+      data.Impressora = { connect: data.ImpressoraID };
+
+      //@ts-ignore
+      delete data.impressoraId;
+    }
     return this.prisma.categoria.update({
       where: { id },
       select: this.select,
