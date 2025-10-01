@@ -13,6 +13,7 @@ import {
   HttpException,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -367,21 +368,24 @@ export class PedidosController {
             HttpStatus.BAD_REQUEST,
           );
         }
-        const resp = await this.apiOmieService.createProductOmie(
-          restaurant?.integrationOmie?.omie_key,
-          restaurant?.integrationOmie?.omie_secret,
-          result.id,
-          tempProd,
-        );
 
-        if (resp.data.codigo_pedido) {
-          await this.prisma.pedidos.update({
-            where: { id: result.id },
-            data: {
-              pdvCodPedido: String(resp.data.codigo_pedido),
-            },
-          });
-        }
+        // TODO: Descomentar quando o Omie estiver funcionando
+
+        // const resp = await this.apiOmieService.createProductOmie(
+        //   restaurant?.integrationOmie?.omie_key,
+        //   restaurant?.integrationOmie?.omie_secret,
+        //   result.id,
+        //   tempProd,
+        // );
+
+        // if (resp.data.codigo_pedido) {
+        //   await this.prisma.pedidos.update({
+        //     where: { id: result.id },
+        //     data: {
+        //       pdvCodPedido: String(resp.data.codigo_pedido),
+        //     },
+        //   });
+        // }
       }
 
       return result;
@@ -524,27 +528,28 @@ export class PedidosController {
             }
           }
 
-          try {
-            const resp = await this.apiOmieService.gerarPedido({
-              call: 'IncluirItemPedido',
-              param: tempProd,
-              app_key: restaurant.integrationOmie.omie_key,
-              app_secret: restaurant.integrationOmie.omie_secret,
-            });
+          // TODO: Descomentar quando o Omie estiver funcionando
+          // try {
+          //   const resp = await this.apiOmieService.gerarPedido({
+          //     call: 'IncluirItemPedido',
+          //     param: tempProd,
+          //     app_key: restaurant.integrationOmie.omie_key,
+          //     app_secret: restaurant.integrationOmie.omie_secret,
+          //   });
 
-            // Atualizar o pdvCodPedido se necessário
-            if (resp.data.codigo_pedido) {
-              await this.prisma.pedidos.update({
-                where: { id },
-                data: {
-                  pdvCodPedido: String(resp.data.codigo_pedido),
-                },
-              });
-            }
-          } catch (omieError) {
-            console.error('Erro ao atualizar pedido no Omie:', omieError);
-            // Não falhar a operação se houver erro no Omie
-          }
+          //   // Atualizar o pdvCodPedido se necessário
+          //   if (resp.data.codigo_pedido) {
+          //     await this.prisma.pedidos.update({
+          //       where: { id },
+          //       data: {
+          //         pdvCodPedido: String(resp.data.codigo_pedido),
+          //       },
+          //     });
+          //   }
+          // } catch (omieError) {
+          //   console.error('Erro ao atualizar pedido no Omie:', omieError);
+          //   // Não falhar a operação se houver erro no Omie
+          // }
         }
       }
 
@@ -556,6 +561,55 @@ export class PedidosController {
       console.error(error);
       throw new HttpException('Erro interno', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Finalizar pedido',
+    description: 'Atualiza um pedido existente.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID do pedido a ser finalizado',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedido finalizado com sucesso',
+    schema: {
+      example: 'Pedido finalizado com sucesso',
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Dados inválidos - Verifique os campos obrigatórios e formatos',
+    schema: {
+      example: EXEMPLOS_ERRO_VALIDACAO_UPDATE.PEDIDO_ID_OBRIGATORIO,
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Pedido não encontrado',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async finalizar(
+    @Param('id') id: string,
+    @Req() req: FastifyRequest<{ Body: { caixaId: string; userId: string } }>,
+  ) {
+    return this.pedidosService.finalizar(
+      id,
+      req.user.restaurantCnpj,
+      req.body.caixaId,
+      req.body.userId,
+    );
   }
 
   @Delete(':id')

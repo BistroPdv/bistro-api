@@ -372,4 +372,15 @@ export class PedidosService {
       data: { delete: true },
     });
   }
+
+  async finalizar(id: string, cnpj: string, caixaId: string, userId?: string) {
+    return this.prisma.pedidos.update({
+      where: { id, restaurantCnpj: cnpj },
+      data: {
+        status: 'FINALIZADO',
+        caixaId,
+        userId,
+      },
+    });
+  }
 }

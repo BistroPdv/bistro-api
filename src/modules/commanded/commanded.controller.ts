@@ -116,6 +116,59 @@ export class CommandedController {
     });
   }
 
+  @Get('open')
+  @ApiOperation({
+    summary: 'Lista comandas com consumo',
+    description: 'Lista comandas com em aberto e com itens em aberto',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de comandas retornada com sucesso',
+    type: PaginationCommandedResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async findAllOpen(
+    @Query() query: PaginationQueryDto,
+    @Req() req: FastifyRequest,
+  ) {
+    return this.commandedService.findAllOpen({
+      ...query,
+      cnpj: req.user.restaurantCnpj,
+    });
+  }
+
+  @Get('open/:id')
+  @ApiOperation({
+    summary: 'Lista comandas com consumo',
+    description: 'Lista comandas com em aberto e com itens em aberto',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de comandas retornada com sucesso',
+    type: PaginationCommandedResponse,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async findOneOpen(@Param('id') id: string, @Req() req: FastifyRequest) {
+    return this.commandedService.findOneOpen({
+      id,
+      cnpj: req.user.restaurantCnpj,
+    });
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Listar uma comanda',

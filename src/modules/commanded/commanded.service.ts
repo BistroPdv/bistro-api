@@ -134,6 +134,91 @@ export class CommandedService {
     );
   }
 
+  async findAllOpen(query: PaginationDto & { cnpj: string }) {
+    const { page, limit, search, cnpj } = query;
+    const { skip, take } = calculatePagination(page, limit);
+
+    validatePrismaFields(Prisma.PedidosScalarFieldEnum, search);
+
+    const total = await this.prisma.pedidos.count({
+      where: {
+        AND: {
+          OR: [{ status: 'ABERTO' }, { status: 'AGUARDANDO_PG' }],
+          NOT: { comandaId: null },
+        },
+      },
+    });
+
+    const pedido = await this.prisma.pedidos.findMany({
+      where: {
+        restaurantCnpj: cnpj,
+        AND: {
+          OR: [{ status: 'ABERTO' }, { status: 'AGUARDANDO_PG' }],
+          NOT: { comandaId: null },
+        },
+      },
+      select: {
+        mesa: { select: { numero: true, id: true } },
+        comanda: { select: { id: true, numero: true } },
+        produtos: {
+          select: {
+            obs: true,
+            quantidade: true,
+            status: true,
+            produto: { select: { nome: true, preco: true, imagem: true } },
+            adicionais: {
+              select: { adicional: { select: { nome: true, preco: true } } },
+            },
+          },
+        },
+      },
+      skip,
+      orderBy: {
+        comanda: { numero: 'asc' },
+      },
+      take: take ?? total,
+    });
+
+    return pedido;
+  }
+
+  async findOneOpen({ cnpj, id }: { cnpj: string; id: string }) {
+    const numero = isNaN(Number(id)) ? 0 : Number(id);
+    console.log(numero);
+    const pedido = await this.prisma.pedidos.findFirst({
+      where: {
+        restaurantCnpj: cnpj,
+        status: 'ABERTO',
+        comanda: { numero },
+      },
+      select: {
+        id: true,
+        mesa: { select: { numero: true, id: true } },
+        comanda: { select: { id: true, numero: true } },
+        produtos: {
+          select: {
+            obs: true,
+            quantidade: true,
+            status: true,
+            produto: {
+              select: { id: true, nome: true, preco: true, imagem: true },
+            },
+            adicionais: {
+              select: {
+                adicional: { select: { id: true, nome: true, preco: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        comanda: { numero: 'asc' },
+      },
+    });
+
+    return pedido;
+  }
+
   findOne(id: string, cnpj: string) {
     const numero = isNaN(Number(id)) ? 0 : Number(id);
     const commanded = this.prisma.comanda.findFirst({
