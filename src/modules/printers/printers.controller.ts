@@ -1,5 +1,6 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { WebsocketGateway } from '@/websocket/websocket.gateway';
 import {
   Controller,
   Delete,
@@ -22,7 +23,10 @@ import { PrintersService } from './printers.service';
 @ApiTags('Printers')
 @Controller('printers')
 export class PrintersController {
-  constructor(private readonly printersService: PrintersService) {}
+  constructor(
+    private readonly printersService: PrintersService,
+    private readonly websocketGateway: WebsocketGateway,
+  ) {}
 
   @Get()
   async findAll(
@@ -48,12 +52,21 @@ export class PrintersController {
   async create(
     @Req() req: FastifyRequest<{ Body: Prisma.ImpressoraCreateInput }>,
   ) {
-    return this.printersService.create(
+    const response = await this.printersService.create(
       {
         ...req.body,
       },
       req.user.restaurantCnpj,
     );
+
+    if (response) {
+      const printers = await this.printersService.findAll({
+        cnpj: req.user.restaurantCnpj,
+      });
+      this.websocketGateway.server.emit(`printer:get-all:aaaaa`, printers.data);
+    }
+
+    return response;
   }
 
   @Put(':id')
@@ -61,7 +74,19 @@ export class PrintersController {
     @Req() req: FastifyRequest<{ Body: Prisma.ImpressoraUpdateInput }>,
     @Param('id') id: string,
   ) {
-    return this.printersService.update(req.body, id, req.user.restaurantCnpj);
+    const response = await this.printersService.update(
+      req.body,
+      id,
+      req.user.restaurantCnpj,
+    );
+
+    if (response) {
+      const printers = await this.printersService.findAll({
+        cnpj: req.user.restaurantCnpj,
+      });
+      this.websocketGateway.server.emit(`printer:get-all:aaaaa`, printers.data);
+    }
+    return response;
   }
 
   @Delete(':id')
