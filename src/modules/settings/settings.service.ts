@@ -34,6 +34,9 @@ export class SettingsService {
     email: true,
     typeService: true,
     phone: true,
+    printerServerUrl: true,
+    printerServerPort: true,
+    printerServerToken: true,
     Banner: {
       where: {
         delete: false,
@@ -62,18 +65,20 @@ export class SettingsService {
         restaurantCnpj: cnpj,
       },
       select: {
+        id: true,
         nome: true,
         ip: true,
         porta: true,
       },
     });
-    
+
     const printerNotification = await this.prisma.impressora.findFirst({
       where: {
         id: settings.printerNotification ?? '',
         restaurantCnpj: cnpj,
       },
       select: {
+        id: true,
         nome: true,
         ip: true,
         porta: true,
@@ -109,6 +114,9 @@ export class SettingsService {
         typeService: fields.typeService,
         email: fields.email,
         printerNotification: fields.printerNotification,
+        printerServerUrl: fields.printerServerUrl,
+        printerServerPort: Number(fields.printerServerPort),
+        printerServerToken: fields.printerServerToken,
         printerBill: fields.printerBill,
         pdvIntegrations: fields.pdvIntegrations,
       },
@@ -121,6 +129,9 @@ export class SettingsService {
         integrationOmie: { select: { omie_key: true, omie_secret: true } },
         phone: true,
         typeService: true,
+        printerServerUrl: true,
+        printerServerPort: true,
+        printerServerToken: true,
       },
     });
 
@@ -168,6 +179,9 @@ export class SettingsService {
             integrationOmie: { select: { omie_key: true, omie_secret: true } },
             cnpj: true,
             phone: true,
+            printerServerUrl: true,
+            printerServerPort: true,
+            printerServerToken: true,
           },
         });
       }

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class UpdateSettingsDto {
   @ApiPropertyOptional({
@@ -40,4 +40,20 @@ export class UpdateSettingsDto {
   @IsNotEmpty()
   @IsString()
   pdvIntegrations: string;
+
+  @ApiPropertyOptional({
+    example: '192.168.1.225',
+    description: 'URL do servidor de impressão',
+  })
+  @IsNotEmpty()
+  @IsString()
+  printerServerUrl: string;
+
+  @ApiPropertyOptional({
+    example: 9100,
+    description: 'Porta do servidor de impressão',
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  printerServerPort: number;
 }

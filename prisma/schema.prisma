@@ -82,6 +82,9 @@ model Restaurant {
   delete              Boolean          @default(false) // Para controlar o status
   printerNotification String?
   printerBill         String?
+  printerServerToken  String?          @default(uuid())
+  printerServerUrl    String?          
+  printerServerPort   Int?             @default(5572)
   typeService         TypeService      @default(TABLE)
   adminPassword       String?          @default("admin123")
   WhiteLabel          WhiteLabel?

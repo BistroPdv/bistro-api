@@ -1,5 +1,6 @@
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { PrismaService } from '@/database/prisma/prisma.service';
 import { WebsocketGateway } from '@/websocket/websocket.gateway';
 import {
   Controller,
@@ -26,6 +27,7 @@ export class PrintersController {
   constructor(
     private readonly printersService: PrintersService,
     private readonly websocketGateway: WebsocketGateway,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get()
@@ -63,7 +65,16 @@ export class PrintersController {
       const printers = await this.printersService.findAll({
         cnpj: req.user.restaurantCnpj,
       });
-      this.websocketGateway.server.emit(`printer:get-all:aaaaa`, printers.data);
+      const tokenPrinterServer = await this.prisma.restaurant.findUnique({
+        where: { cnpj: req.user.restaurantCnpj },
+        select: { printerServerToken: true },
+      });
+      if (tokenPrinterServer) {
+        this.websocketGateway.server.emit(
+          `printer:get-all:${tokenPrinterServer.printerServerToken}`,
+          printers.data,
+        );
+      }
     }
 
     return response;
@@ -84,13 +95,39 @@ export class PrintersController {
       const printers = await this.printersService.findAll({
         cnpj: req.user.restaurantCnpj,
       });
-      this.websocketGateway.server.emit(`printer:get-all:aaaaa`, printers.data);
+      const tokenPrinterServer = await this.prisma.restaurant.findUnique({
+        where: { cnpj: req.user.restaurantCnpj },
+        select: { printerServerToken: true },
+      });
+      console.log(tokenPrinterServer);
+      if (tokenPrinterServer) {
+        this.websocketGateway.server.emit(
+          `printer:get-all:${tokenPrinterServer.printerServerToken}`,
+          printers.data,
+        );
+      }
     }
     return response;
   }
 
   @Delete(':id')
   async delete(@Param('id') id: string, @Req() req: FastifyRequest) {
-    return this.printersService.delete(id, req.user.restaurantCnpj);
+    const response = await this.printersService.delete(
+      id,
+      req.user.restaurantCnpj,
+    );
+    if (response) {
+      const tokenPrinterServer = await this.prisma.restaurant.findUnique({
+        where: { cnpj: req.user.restaurantCnpj },
+        select: { printerServerToken: true },
+      });
+      if (tokenPrinterServer) {
+        this.websocketGateway.server.emit(
+          `printer:delete:${tokenPrinterServer.printerServerToken}`,
+          id,
+        );
+      }
+    }
+    return response;
   }
 }
