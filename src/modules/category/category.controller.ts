@@ -226,7 +226,9 @@ export class CategoryController {
     @Req()
     req: FastifyRequest<{
       Params: { id: string };
-      Body: Prisma.CategoriaUpdateInput & { adicionais?: AdcOptions[] };
+      Body: Prisma.CategoriaUpdateInput & { adicionais?: AdcOptions[] } & {
+        impressoraId?: string;
+      };
     }>,
     @Param('id') id: string,
   ) {
@@ -240,7 +242,7 @@ export class CategoryController {
 
       const adicionais = req.body.adicionais;
       delete req.body.adicionais;
-
+      console.log(req.body);
       const result = await this.categoryService.update(
         {
           ...req.body,

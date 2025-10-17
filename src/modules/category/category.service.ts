@@ -187,7 +187,7 @@ export class CategoryService {
     //@ts-ignore
     if (data.impressoraId) {
       //@ts-ignore
-      data.Impressora = { connect: data.ImpressoraID };
+      data.Impressora = { connect: { id: data.impressoraId } };
 
       //@ts-ignore
       delete data.impressoraId;
