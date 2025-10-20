@@ -9,7 +9,7 @@ import { buildWhere } from '@/common/utils/prisma-query-builder';
 import { validatePrismaFields } from '@/common/utils/prisma-validator';
 import { PrismaService } from '@/database/prisma/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, StatusProduto } from '@prisma/client';
 
 export interface Adicional {
   id: string;
@@ -32,6 +32,7 @@ export class PedidosService {
     status: true,
     pdvCodPedido: true,
     createdAt: true,
+    comanda: { select: { id: true, numero: true } },
     mesa: { select: { numero: true, id: true } },
     produtos: {
       select: {
@@ -62,10 +63,12 @@ export class PedidosService {
       select: {
         type: true,
         pedidoId: true,
+        createdAt: true,
         pedido: {
           select: {
             produtos: {
               select: {
+                quantidade: true,
                 produto: {
                   select: {
                     nome: true,
@@ -246,7 +249,7 @@ export class PedidosService {
       for (const p of produtos) {
         const pedidoProduto = await this.prisma.pedidoProduto.create({
           data: {
-            status: p.status,
+            status: p.status || StatusProduto.PREPARANDO,
             pedidoId: create.id,
             produtoId: p.produtoId,
             obs: p.obs,

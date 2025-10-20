@@ -223,7 +223,7 @@ export class CaixaService {
       vendas: vendas.map((venda) => ({
         id: venda.id,
         status: venda.status.toString(),
-        tipoPedido: venda.tipoPedido?.toString() || 'COUNTER',
+        tipoPedido: venda.tipoPedido?.toString() || 'INDOOR',
         createdAt: venda.createdAt,
         total: venda.Payments.reduce((acc, payment) => acc + payment.valor, 0),
         troco: venda.Payments.reduce(
