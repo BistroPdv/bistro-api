@@ -1,4 +1,5 @@
 import { ApiOmieService } from '@/common/services/api-omie.service';
+import { WebsocketGateway } from '@/websocket/websocket.gateway';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../database/prisma/prisma.module';
 import { TablesModule } from '../tables/tables.module';
@@ -9,6 +10,6 @@ import { PedidosService } from './pedidos.service';
   imports: [PrismaModule, TablesModule],
   controllers: [PedidosController],
   exports: [PedidosService],
-  providers: [PedidosService, ApiOmieService],
+  providers: [PedidosService, ApiOmieService, WebsocketGateway],
 })
 export class PedidosModule {}

@@ -6,6 +6,7 @@ import {
   ItemsCreate,
 } from '@/common/services/api-omie.service';
 import { PrismaService } from '@/database/prisma/prisma.service';
+import { WebsocketGateway } from '@/websocket/websocket.gateway';
 import {
   Controller,
   Delete,
@@ -65,6 +66,7 @@ export class PedidosController {
     private readonly tablesService: TablesService,
     private readonly prisma: PrismaService,
     private readonly apiOmieService: ApiOmieService,
+    private readonly websocketGateway: WebsocketGateway,
   ) {}
 
   @Get()
@@ -236,6 +238,51 @@ export class PedidosController {
     );
   }
 
+  @Get('comanda/:id')
+  @ApiOperation({
+    summary: 'Buscar pedidos por comanda',
+    description: 'Retorna todos os pedidos de uma comanda específica',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID da comanda',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pedidos da comanda retornados com sucesso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Comanda não encontrada',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Comanda não encontrada',
+        error: 'Not Found',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autorizado - Token JWT inválido ou ausente',
+  })
+  async findByComanda(
+    @Param('id') id: string,
+    @Query() query: FindByMesaQueryDto,
+    @Req() req: FastifyRequest,
+  ) {
+    const { status, comandaId, prodImage, ...paginationQuery } = query;
+    const isProdImage = prodImage === 'true';
+
+    return this.pedidosService.findByComanda(
+      id,
+      req.user.restaurantCnpj,
+      paginationQuery,
+      status as 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+      isProdImage,
+    );
+  }
+
   @Post()
   @ApiOperation({
     summary: 'Criar novo pedido',
@@ -387,6 +434,13 @@ export class PedidosController {
         //   });
         // }
       }
+
+      //TODO: socket emitir evento de pedido criado
+
+      this.websocketGateway.server.emit(
+        `pedidos:updated:${req.user.restaurantCnpj}`,
+        result,
+      );
 
       return result;
     } catch (error) {
@@ -552,6 +606,11 @@ export class PedidosController {
           // }
         }
       }
+
+      this.websocketGateway.server.emit(
+        `pedidos:updated:${req.user.restaurantCnpj}`,
+        result,
+      );
 
       return result;
     } catch (error) {

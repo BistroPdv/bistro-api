@@ -66,6 +66,16 @@ export class PedidosService {
         createdAt: true,
         pedido: {
           select: {
+            comanda: {
+              select: {
+                numero: true,
+              },
+            },
+            mesa: {
+              select: {
+                numero: true,
+              },
+            },
             produtos: {
               select: {
                 quantidade: true,
@@ -169,6 +179,54 @@ export class PedidosService {
           restaurantCnpj: cnpj,
           ...(status ? { status } : {}),
         };
+
+    const [data, total] = await Promise.all([
+      this.prisma.pedidos.findMany({
+        where,
+        select: {
+          ...this.select(prodImage ?? false),
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.pedidos.count({ where }),
+    ]);
+
+    const { page: responsePage, limit: responseLimit } =
+      normalizePaginationResponse(page, limit, total);
+
+    return new PaginationResponseDto(data, total, responsePage, responseLimit);
+  }
+
+  async findByComanda(
+    id: string,
+    cnpj: string,
+    query: PaginationQueryDto,
+    status: 'ABERTO' | 'CANCELADO' | 'FINALIZADO',
+    prodImage?: boolean,
+  ) {
+    const { page, limit } = query;
+    const { skip, take } = calculatePagination(page, limit);
+
+    if (!cnpj) {
+      throw new NotFoundException('CNPJ não encontrado');
+    }
+
+    const isComanda = await this.prisma.comanda.findUnique({
+      where: { id, restaurant: { cnpj } },
+    });
+
+    if (!isComanda) {
+      throw new NotFoundException('Comanda não encontrada');
+    }
+
+    const where: Prisma.PedidosWhereInput = {
+      delete: false,
+      comanda: { id },
+      restaurantCnpj: cnpj,
+      ...(status ? { status } : {}),
+    };
 
     const [data, total] = await Promise.all([
       this.prisma.pedidos.findMany({
